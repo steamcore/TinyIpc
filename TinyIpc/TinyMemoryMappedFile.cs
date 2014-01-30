@@ -8,7 +8,7 @@ namespace TinyIpc
 	/// <summary>
 	/// Wraps a MemoryMappedFile with inter process synchronization and signaling
 	/// </summary>
-	public class TinyMemoryMappedFile : IDisposable
+	public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	{
 		private bool disposed;
 

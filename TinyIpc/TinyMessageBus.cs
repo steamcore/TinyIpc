@@ -8,18 +8,18 @@ using ProtoBuf;
 
 namespace TinyIpc
 {
-	public class TinyMessageBus : IDisposable
+	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
 
-		private bool disposed;
 		private long lastEntryId;
 
+		private readonly bool disposeFileOnExit;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
 		private readonly TimeSpan maxMessageAge;
-		private readonly TinyMemoryMappedFile memoryMappedFile;
+		private readonly ITinyMemoryMappedFile memoryMappedFile;
 
 		/// <summary>
 		/// Called whenever a new message is received
@@ -30,22 +30,28 @@ namespace TinyIpc
 		public long MessagesReceived { get; private set; }
 
 		public TinyMessageBus(string name)
-			: this(name, 1024*1024)
+			: this(new TinyMemoryMappedFile(name))
+		{
+			disposeFileOnExit = true;
+		}
+
+		public TinyMessageBus(string name, TimeSpan maxMessageAge)
+			: this(new TinyMemoryMappedFile(name), maxMessageAge)
+		{
+			disposeFileOnExit = true;
+		}
+
+		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile)
+			: this(memoryMappedFile, TimeSpan.FromMilliseconds(200))
 		{
 		}
 
-		public TinyMessageBus(string name, long maxFileSize)
-			: this(name, maxFileSize, TimeSpan.FromMilliseconds(200))
+		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, TimeSpan maxMessageAge)
 		{
-		}
-
-		public TinyMessageBus(string name, long maxFileSize, TimeSpan maxMessageAge)
-		{
-			this.maxMessageAge = maxMessageAge;
-
 			Serializer.PrepareSerializer<Entry>();
 
-			memoryMappedFile = new TinyMemoryMappedFile(name, maxFileSize);
+			this.maxMessageAge = maxMessageAge;
+			this.memoryMappedFile = memoryMappedFile;
 
 			var lastEntry = DeserializeLog(memoryMappedFile.Read()).LastOrDefault();
 			if (lastEntry != null)
@@ -53,24 +59,16 @@ namespace TinyIpc
 				lastEntryId = lastEntry.Id;
 			}
 
-			memoryMappedFile.FileUpdated += (sender, args) => HandleIncomingMessages();
+			memoryMappedFile.FileUpdated += HandleIncomingMessages;
 		}
 
 		public void Dispose()
 		{
-			if (disposed)
-				return;
+			memoryMappedFile.FileUpdated -= HandleIncomingMessages;
 
-			disposed = true;
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool disposing)
-		{
-			if (disposing)
+			if (disposeFileOnExit && memoryMappedFile is TinyMemoryMappedFile)
 			{
-				memoryMappedFile.Dispose();
+				(memoryMappedFile as TinyMemoryMappedFile).Dispose();
 			}
 		}
 
@@ -125,7 +123,7 @@ namespace TinyIpc
 			}
 		}
 
-		private void HandleIncomingMessages()
+		private void HandleIncomingMessages(object sender, EventArgs args)
 		{
 			lock (messageReaderLock)
 			{
