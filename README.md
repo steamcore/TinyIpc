@@ -18,10 +18,18 @@ Not intended for high throughput systems, guaranteed delivery or keeping a persi
 		<th>Named Pipes</th>
 	</tr>
 	<tr>
-		<td>Inter process broadcasting</td>
+		<td>Broadcasting to all listeners</td>
 		<td>&#x2713;</td>
 		<td>&#x2713;</td>
 		<td>&#x2713; (1)</td>
+		<td>&#x2717;</td>
+		<td>&#x2717;</td>
+	</tr>
+	<tr>
+		<td>No server master process</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
 		<td>&#x2717;</td>
 		<td>&#x2717;</td>
 	</tr>
