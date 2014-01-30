@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyIpc", "TinyIpc\TinyIpc.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyIpc.Example", "TinyIpc.Example\TinyIpc.Example.csproj", "{FEC39B05-1BE7-4D1D-9EB3-16C78787F91E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TinyIpc.Tests", "TinyIpc.Tests\TinyIpc.Tests.csproj", "{AB77F21B-302A-4CD5-980E-614B09F26FD9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FEC39B05-1BE7-4D1D-9EB3-16C78787F91E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEC39B05-1BE7-4D1D-9EB3-16C78787F91E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEC39B05-1BE7-4D1D-9EB3-16C78787F91E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB77F21B-302A-4CD5-980E-614B09F26FD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB77F21B-302A-4CD5-980E-614B09F26FD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB77F21B-302A-4CD5-980E-614B09F26FD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB77F21B-302A-4CD5-980E-614B09F26FD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

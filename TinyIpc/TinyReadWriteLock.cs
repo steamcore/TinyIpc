@@ -15,8 +15,17 @@ namespace TinyIpc
 		private bool readLock;
 		private bool writeLock;
 
+		public bool IsReaderLockHeld { get { return readLock; } }
+		public bool IsWriterLockHeld { get { return writeLock; } }
+
 		public TinyReadWriteLock(string name, int maxReaderCount)
 		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentException("Lock must be named", "name");
+
+			if (maxReaderCount == 0)
+				throw new ArgumentOutOfRangeException("maxReaderCount", "Need at least one reader");
+
 			this.maxReaderCount = maxReaderCount;
 			mutex = new Mutex(false, "TinyReadWriteLock_Mutex_" + name);
 			semaphore = new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
@@ -31,6 +40,9 @@ namespace TinyIpc
 
 		public void AcquireReadLock()
 		{
+			if (readLock)
+				return;
+
 			if (writeLock)
 				throw new InvalidOperationException("Can not acquire read lock because write lock is alread held");
 
