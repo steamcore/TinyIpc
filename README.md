@@ -1,19 +1,61 @@
 # TinyIpc #
 
-Simple .NET inter process message bus with supporting classes.
+.NET inter process broadcast message bus and supporting classes.
 
-Intend for desktop applications, built with .NET client profile, depends on protobuf-net.
+Intend for low to medium throughput messaging in desktop applications, built with .NET client profile, depends on protobuf-net.
+
+Not intended for high throughput systems, guaranteed delivery or keeping a persistent message log.
+
+## Compared to other solutions ##
+
+<table>
+	<tr>
+		<th></th>
+		<th>TinyIPC</th>
+		<th>XDMessaging</th>
+		<th>NVents</th>
+		<th>IpcChannel</th>
+		<th>Named Pipes</th>
+	</tr>
+	<tr>
+		<td>Inter process broadcasting</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
+		<td>&#x2713; (1)</td>
+		<td>&#x2717;</td>
+		<td>&#x2717;</td>
+	</tr>
+	<tr>
+		<td>Insensitive to process privilege level</td>
+		<td>&#x2713;</td>
+		<td>&#x2717;</td>
+		<td>&#x2717;</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
+	</tr>
+	<tr>
+		<td>Entirely in memory</td>
+		<td>&#x2713;</td>
+		<td>&#x2717;</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
+		<td>&#x2713;</td>
+	</tr>
+</table>
+
+1 Via SSDP network discovery
 
 ## Simple example ##
 
-	using (var messagebus = new TinyMessageBus("ExampleChannel"))
-	{
-		messagebus.MessageReceived += (sender, received) => Console.WriteLine(received.Message);
+```csharp
+using (var messagebus = new TinyMessageBus("ExampleChannel"))
+{
+	messagebus.MessageReceived += (sender, received) => Console.WriteLine(received.Message);
 
-		while (true)
-		{
-			var message = Console.ReadLine();
-			messagebus.Publish(message);
-		}
+	while (true)
+	{
+		var message = Console.ReadLine();
+		messagebus.Publish(message);
 	}
-  
+}
+```
