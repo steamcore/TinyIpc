@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ProtoBuf;
 
@@ -19,6 +20,8 @@ namespace TinyIpc
 		private readonly bool shouldDisposeFile;
 
 		private long lastEntryId;
+		private int waitingReaders;
+		private int waitingWriters;
 
 		/// <summary>
 		/// Called whenever a new message is received
@@ -81,20 +84,27 @@ namespace TinyIpc
 		}
 
 		/// <summary>
-		/// Publishes a message to the message bus as soon as possible in an async task
+		/// Publishes a message to the message bus as soon as possible in a background task
 		/// </summary>
 		/// <param name="message"></param>
-		public Task PublishAsync(string message)
+		public void PublishAsync(string message)
 		{
 			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
 
-			return Task.Factory.StartNew(ProcessPublishQueue);
+			if (waitingWriters > 0)
+				return;
+
+			Task.Factory.StartNew(ProcessPublishQueue);
 		}
 
 		private void ProcessPublishQueue()
 		{
+			Interlocked.Increment(ref waitingWriters);
+
 			lock (messagePublisherLock)
 			{
+				Interlocked.Decrement(ref waitingWriters);
+
 				if (publishQueue.Count == 0)
 					return;
 
@@ -124,8 +134,15 @@ namespace TinyIpc
 
 		private void HandleIncomingMessages(object sender, EventArgs args)
 		{
+			if (waitingReaders > 0)
+				return;
+
+			Interlocked.Increment(ref waitingReaders);
+
 			lock (messageReaderLock)
 			{
+				Interlocked.Decrement(ref waitingReaders);
+
 				var data = memoryMappedFile.Read();
 
 				foreach (var entry in DeserializeLog(data).SkipWhile(entry => entry.Id <= lastEntryId || entry.Timestamp + maxMessageAge < DateTime.UtcNow))

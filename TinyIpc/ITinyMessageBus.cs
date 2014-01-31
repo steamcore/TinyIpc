@@ -19,9 +19,9 @@ namespace TinyIpc
 		void ResetMetrics();
 
 		/// <summary>
-		/// Publishes a message to the message bus as soon as possible in an async task
+		/// Publishes a message to the message bus as soon as possible in a background task
 		/// </summary>
 		/// <param name="message"></param>
-		Task PublishAsync(string message);
+		void PublishAsync(string message);
 	}
 }
