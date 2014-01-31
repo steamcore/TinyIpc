@@ -10,15 +10,18 @@ namespace TinyIpc
 	/// </summary>
 	public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	{
-		private bool disposed;
-
-		private readonly MemoryMappedFile memoryMappedFile;
-		private readonly int operationTimeoutMs;
-		private readonly TinyReadWriteLock readWriteLock;
 		private readonly Task fileWatcherTask;
+		private readonly long maxFileSize;
+		private readonly MemoryMappedFile memoryMappedFile;
+		private readonly ITinyReadWriteLock readWriteLock;
+		private readonly bool shouldDisposeLock;
 		private readonly EventWaitHandle waitHandle;
 
+		private bool disposed;
+
 		public event EventHandler FileUpdated;
+
+		public long MaxFileSize { get { return maxFileSize; } }
 
 		public TinyMemoryMappedFile(string name)
 			: this(name, 1024 * 1024)
@@ -26,15 +29,17 @@ namespace TinyIpc
 		}
 
 		public TinyMemoryMappedFile(string name, long maxFileSize)
-			: this(name, maxFileSize, TimeSpan.FromMilliseconds(500))
+			: this(name, maxFileSize, new TinyReadWriteLock(name, 3))
 		{
+			shouldDisposeLock = true;
 		}
 
-		public TinyMemoryMappedFile(string name, long maxFileSize, TimeSpan operationTimeout)
+		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock)
 		{
-			memoryMappedFile = MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize);
-			operationTimeoutMs = (int)operationTimeout.TotalMilliseconds;
-			readWriteLock = new TinyReadWriteLock(name, 3);
+			this.maxFileSize = maxFileSize;
+			this.readWriteLock = readWriteLock;
+
+			memoryMappedFile = MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
 			waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
 			fileWatcherTask = Task.Factory.StartNew(FileWatcher);
 		}
@@ -56,7 +61,12 @@ namespace TinyIpc
 			if (disposing)
 			{
 				memoryMappedFile.Dispose();
-				readWriteLock.Dispose();
+
+				if (shouldDisposeLock && readWriteLock is TinyReadWriteLock)
+				{
+					(readWriteLock as TinyReadWriteLock).Dispose();
+				}
+
 				waitHandle.Dispose();
 			}
 		}
@@ -84,6 +94,9 @@ namespace TinyIpc
 		/// </summary>
 		public void Write(byte[] data)
 		{
+			if (data.Length > maxFileSize)
+				throw new ArgumentOutOfRangeException("data", "Length greater than max file size");
+
 			readWriteLock.AcquireWriteLock();
 
 			try
@@ -117,7 +130,7 @@ namespace TinyIpc
 		{
 			while (!disposed)
 			{
-				if (!waitHandle.WaitOne(operationTimeoutMs))
+				if (!waitHandle.WaitOne(500))
 					continue;
 
 				if (disposed)
@@ -143,6 +156,9 @@ namespace TinyIpc
 
 		private void InternalWrite(byte[] data)
 		{
+			if (data.Length > maxFileSize)
+				throw new ArgumentOutOfRangeException("data", "Length greater than max file size");
+
 			using (var accessor = memoryMappedFile.CreateViewAccessor())
 			{
 				accessor.Write(0, data.Length);

@@ -10,16 +10,15 @@ namespace TinyIpc
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
-		private readonly object messageReaderLock = new object();
-		private readonly object messagePublisherLock = new object();
-
-		private long lastEntryId;
-
-		private readonly bool disposeFileOnExit;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
 		private readonly TimeSpan maxMessageAge;
+		private readonly object messageReaderLock = new object();
+		private readonly object messagePublisherLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
+		private readonly bool shouldDisposeFile;
+
+		private long lastEntryId;
 
 		/// <summary>
 		/// Called whenever a new message is received
@@ -32,17 +31,17 @@ namespace TinyIpc
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name))
 		{
-			disposeFileOnExit = true;
+			shouldDisposeFile = true;
 		}
 
 		public TinyMessageBus(string name, TimeSpan maxMessageAge)
 			: this(new TinyMemoryMappedFile(name), maxMessageAge)
 		{
-			disposeFileOnExit = true;
+			shouldDisposeFile = true;
 		}
 
 		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile)
-			: this(memoryMappedFile, TimeSpan.FromMilliseconds(200))
+			: this(memoryMappedFile, TimeSpan.FromMilliseconds(500))
 		{
 		}
 
@@ -66,7 +65,7 @@ namespace TinyIpc
 		{
 			memoryMappedFile.FileUpdated -= HandleIncomingMessages;
 
-			if (disposeFileOnExit && memoryMappedFile is TinyMemoryMappedFile)
+			if (shouldDisposeFile && memoryMappedFile is TinyMemoryMappedFile)
 			{
 				(memoryMappedFile as TinyMemoryMappedFile).Dispose();
 			}

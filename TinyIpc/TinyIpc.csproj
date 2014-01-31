@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="ITinyMemoryMappedFile.cs" />
     <Compile Include="ITinyMessageBus.cs" />
+    <Compile Include="ITinyReadWriteLock.cs" />
     <Compile Include="TinyMessageBus.cs" />
     <Compile Include="TinyMemoryMappedFile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

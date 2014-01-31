@@ -7,7 +7,7 @@ namespace TinyIpc
 	/// Implements a simple inter process read/write locking mechanism
 	/// Inspired by http://www.joecheng.com/blog/entries/Writinganinter-processRea.html
 	/// </summary>
-	public class TinyReadWriteLock : IDisposable
+	public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	{
 		private readonly Mutex mutex;
 		private readonly Semaphore semaphore;
@@ -38,6 +38,10 @@ namespace TinyIpc
 			semaphore.Dispose();
 		}
 
+		/// <summary>
+		/// Acquire one read lock
+		/// </summary>
+		/// <exception cref="InvalidOperationException">Thrown if write lock is already held</exception>
 		public void AcquireReadLock()
 		{
 			if (readLock)
@@ -52,6 +56,10 @@ namespace TinyIpc
 			readLock = true;
 		}
 
+		/// <summary>
+		/// Acquires exclusive write locking by consuming all read locks
+		/// </summary>
+		/// <exception cref="InvalidOperationException">Thrown if read lock is already held</exception>
 		public void AcquireWriteLock()
 		{
 			if (readLock)
@@ -66,6 +74,9 @@ namespace TinyIpc
 			writeLock = true;
 		}
 
+		/// <summary>
+		/// Will release any lock held
+		/// </summary>
 		public void ReleaseLock()
 		{
 			if (readLock)
