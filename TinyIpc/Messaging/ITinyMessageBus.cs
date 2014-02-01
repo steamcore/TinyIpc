@@ -1,6 +1,6 @@
 using System;
 
-namespace TinyIpc
+namespace TinyIpc.Messaging
 {
 	public interface ITinyMessageBus
 	{

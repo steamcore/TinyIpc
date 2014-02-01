@@ -2,8 +2,9 @@
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Threading.Tasks;
+using TinyIpc.Synchronization;
 
-namespace TinyIpc
+namespace TinyIpc.IO
 {
 	/// <summary>
 	/// Wraps a MemoryMappedFile with inter process synchronization and signaling

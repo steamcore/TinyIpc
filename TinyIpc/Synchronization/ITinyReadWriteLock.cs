@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace TinyIpc
+﻿namespace TinyIpc.Synchronization
 {
 	public interface ITinyReadWriteLock
 	{

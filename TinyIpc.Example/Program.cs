@@ -1,4 +1,5 @@
 ﻿using System;
+using TinyIpc.Messaging;
 
 namespace TinyIpc.Example
 {

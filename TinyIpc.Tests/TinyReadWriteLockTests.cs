@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using TinyIpc.Synchronization;
+
 // ReSharper disable InconsistentNaming
 
 namespace TinyIpc.Tests

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TinyIpc
+namespace TinyIpc.IO
 {
 	public interface ITinyMemoryMappedFile
 	{

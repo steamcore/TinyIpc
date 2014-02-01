@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace TinyIpc
+namespace TinyIpc.Synchronization
 {
 	/// <summary>
 	/// Implements a simple inter process read/write locking mechanism
