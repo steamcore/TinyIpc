@@ -6,6 +6,14 @@ namespace TinyIpc
 	{
 		event EventHandler FileUpdated;
 
+		long MaxFileSize { get; }
+
+		/// <summary>
+		/// Gets the file size
+		/// </summary>
+		/// <returns>File size</returns>
+		int GetFileSize();
+
 		/// <summary>
 		/// Reads the content of the memory mapped file with a read lock in place.
 		/// </summary>

@@ -1,5 +1,4 @@
 using System;
-using System.Threading.Tasks;
 
 namespace TinyIpc
 {
@@ -10,6 +9,7 @@ namespace TinyIpc
 		/// </summary>
 		event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
+		bool MessagesBeingProcessed { get; }
 		long MessagesSent { get; }
 		long MessagesReceived { get; }
 

@@ -50,6 +50,7 @@ namespace TinyIpc
 				return;
 
 			disposed = true;
+			waitHandle.Set();
 			fileWatcherTask.Wait();
 
 			Dispose(true);
@@ -72,6 +73,27 @@ namespace TinyIpc
 		}
 
 		/// <summary>
+		/// Gets the file size
+		/// </summary>
+		/// <returns>File size</returns>
+		public int GetFileSize()
+		{
+			readWriteLock.AcquireReadLock();
+
+			try
+			{
+				using (var accessor = memoryMappedFile.CreateViewAccessor())
+				{
+					return accessor.ReadInt32(0);
+				}
+			}
+			finally
+			{
+				readWriteLock.ReleaseReadLock();
+			}
+		}
+
+		/// <summary>
 		/// Reads the content of the memory mapped file with a read lock in place.
 		/// </summary>
 		/// <returns>File content</returns>
@@ -85,7 +107,7 @@ namespace TinyIpc
 			}
 			finally
 			{
-				readWriteLock.ReleaseLock();
+				readWriteLock.ReleaseReadLock();
 			}
 		}
 
@@ -105,7 +127,7 @@ namespace TinyIpc
 			}
 			finally
 			{
-				readWriteLock.ReleaseLock();
+				readWriteLock.ReleaseWriteLock();
 			}
 		}
 
@@ -122,7 +144,7 @@ namespace TinyIpc
 			}
 			finally
 			{
-				readWriteLock.ReleaseLock();
+				readWriteLock.ReleaseWriteLock();
 			}
 		}
 
@@ -130,14 +152,13 @@ namespace TinyIpc
 		{
 			while (!disposed)
 			{
-				if (!waitHandle.WaitOne(500))
-					continue;
+				waitHandle.WaitOne();
 
 				if (disposed)
 					return;
 
 				if (FileUpdated != null)
-					Task.Factory.StartNew(() => FileUpdated(this, null));
+					Task.Factory.StartNew(() => FileUpdated(this, EventArgs.Empty));
 
 				waitHandle.Reset();
 			}

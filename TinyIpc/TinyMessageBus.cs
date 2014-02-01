@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ProtoBuf;
@@ -11,15 +13,20 @@ namespace TinyIpc
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
+		private static readonly Encoding MessageEncoding = Encoding.GetEncoding("UTF-16");
+
+		private readonly long messageOverhead;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
-		private readonly TimeSpan maxMessageAge;
+		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool shouldDisposeFile;
 
 		private long lastEntryId;
+		private long messagesSent;
+		private long messagesReceived;
 		private int waitingReaders;
 		private int waitingWriters;
 
@@ -28,8 +35,9 @@ namespace TinyIpc
 		/// </summary>
 		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		public long MessagesSent { get; private set; }
-		public long MessagesReceived { get; private set; }
+		public bool MessagesBeingProcessed { get { return waitingReaders + waitingWriters > 0; } }
+		public long MessagesSent { get { return messagesSent; } }
+		public long MessagesReceived { get { return messagesReceived; } }
 
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name))
@@ -37,8 +45,8 @@ namespace TinyIpc
 			shouldDisposeFile = true;
 		}
 
-		public TinyMessageBus(string name, TimeSpan maxMessageAge)
-			: this(new TinyMemoryMappedFile(name), maxMessageAge)
+		public TinyMessageBus(string name, TimeSpan minMessageAge)
+			: this(new TinyMemoryMappedFile(name), minMessageAge)
 		{
 			shouldDisposeFile = true;
 		}
@@ -48,11 +56,17 @@ namespace TinyIpc
 		{
 		}
 
-		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, TimeSpan maxMessageAge)
+		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, TimeSpan minMessageAge)
 		{
 			Serializer.PrepareSerializer<Entry>();
 
-			this.maxMessageAge = maxMessageAge;
+			using (var memoryStream = new MemoryStream())
+			{
+				Serializer.Serialize(memoryStream, new Entry { Id = long.MaxValue, Instance = instanceId, Timestamp = DateTime.UtcNow });
+				messageOverhead = memoryStream.Length;
+			}
+
+			this.minMessageAge = minMessageAge;
 			this.memoryMappedFile = memoryMappedFile;
 
 			var lastEntry = DeserializeLog(memoryMappedFile.Read()).LastOrDefault();
@@ -79,8 +93,8 @@ namespace TinyIpc
 		/// </summary>
 		public void ResetMetrics()
 		{
-			MessagesSent = 0;
-			MessagesReceived = 0;
+			messagesSent = 0;
+			messagesReceived = 0;
 		}
 
 		/// <summary>
@@ -89,7 +103,7 @@ namespace TinyIpc
 		/// <param name="message"></param>
 		public void PublishAsync(string message)
 		{
-			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
+			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = MessageEncoding.GetBytes(message) });
 
 			if (waitingWriters > 0)
 				return;
@@ -111,30 +125,51 @@ namespace TinyIpc
 				memoryMappedFile.ReadWrite(
 					data =>
 					{
-						var batchTime = DateTime.UtcNow;
-						var log = DeserializeLog(data).SkipWhile(entry => entry.Timestamp + maxMessageAge < DateTime.UtcNow).ToList();
+						var cutoffPoint = DateTime.UtcNow - minMessageAge;
+						var log = DeserializeLog(data).SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
+						var logSize = log.Select(l => messageOverhead + l.Message.Length).Sum();
 						var lastEntry = log.LastOrDefault();
 						var nextId = Math.Max(lastEntryId, lastEntry != null ? lastEntry.Id : 0) + 1;
 
-						while (publishQueue.Count > 0)
+						// Start slot timer after deserializing log so deserialization doesn't starve the slot time
+						var slotTimer = Stopwatch.StartNew();
+						var batchTime = DateTime.UtcNow;
+
+						// Try to exhaust the publish queue but don't keep a write lock forever
+						while (publishQueue.Count > 0 && slotTimer.ElapsedMilliseconds < 25)
 						{
 							Entry entry;
+
+							if (!publishQueue.TryPeek(out entry) || logSize + messageOverhead + entry.Message.Length > memoryMappedFile.MaxFileSize)
+								break;
+
 							if (!publishQueue.TryDequeue(out entry))
 								break;
+
 							entry.Id = nextId++;
 							entry.Timestamp = batchTime;
 							log.Add(entry);
-							MessagesSent++;
+							logSize += messageOverhead + entry.Message.Length;
+							Interlocked.Increment(ref messagesSent);
 						}
 
-						return SerializeLog(log);
+						if (waitingWriters == 0 && publishQueue.Count > 0)
+						{
+							Task.Factory.StartNew(ProcessPublishQueue);
+						}
+
+						using (var memoryStream = new MemoryStream((int)logSize))
+						{
+							Serializer.Serialize(memoryStream, log);
+							return memoryStream.ToArray();
+						}
 					});
 			}
 		}
 
 		private void HandleIncomingMessages(object sender, EventArgs args)
 		{
-			if (waitingReaders > 0)
+			if (waitingReaders > 0 || MessageReceived == null)
 				return;
 
 			Interlocked.Increment(ref waitingReaders);
@@ -145,7 +180,7 @@ namespace TinyIpc
 
 				var data = memoryMappedFile.Read();
 
-				foreach (var entry in DeserializeLog(data).SkipWhile(entry => entry.Id <= lastEntryId || entry.Timestamp + maxMessageAge < DateTime.UtcNow))
+				foreach (var entry in DeserializeLog(data).SkipWhile(entry => entry.Id <= lastEntryId))
 				{
 					lastEntryId = entry.Id;
 
@@ -153,9 +188,9 @@ namespace TinyIpc
 						continue;
 
 					if (MessageReceived != null)
-						MessageReceived(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
+						MessageReceived(this, new TinyMessageReceivedEventArgs { Message = MessageEncoding.GetString(entry.Message) });
 
-					MessagesReceived++;
+					Interlocked.Increment(ref messagesReceived);
 				}
 			}
 		}
@@ -168,15 +203,6 @@ namespace TinyIpc
 			using (var memoryStream = new MemoryStream(data))
 			{
 				return Serializer.Deserialize<List<Entry>>(memoryStream);
-			}
-		}
-
-		private static byte[] SerializeLog(List<Entry> log)
-		{
-			using (var memoryStream = new MemoryStream(log.Count * 128))
-			{
-				Serializer.Serialize(memoryStream, log);
-				return memoryStream.ToArray();
 			}
 		}
 
@@ -193,7 +219,7 @@ namespace TinyIpc
 			public DateTime Timestamp { get; set; }
 
 			[ProtoMember(4)]
-			public string Message { get; set; }
+			public byte[] Message { get; set; }
 		}
 	}
 }

@@ -12,13 +12,21 @@ namespace TinyIpc
 		private readonly Mutex mutex;
 		private readonly Semaphore semaphore;
 		private readonly int maxReaderCount;
-		private bool readLock;
+		private readonly TimeSpan waitTimeout;
+
+		private bool disposed;
+		private int readLocks;
 		private bool writeLock;
 
-		public bool IsReaderLockHeld { get { return readLock; } }
+		public bool IsReaderLockHeld { get { return readLocks > 0; } }
 		public bool IsWriterLockHeld { get { return writeLock; } }
 
 		public TinyReadWriteLock(string name, int maxReaderCount)
+			: this(name, maxReaderCount, TimeSpan.FromSeconds(5))
+		{
+		}
+
+		public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout)
 		{
 			if (string.IsNullOrWhiteSpace(name))
 				throw new ArgumentException("Lock must be named", "name");
@@ -27,13 +35,29 @@ namespace TinyIpc
 				throw new ArgumentOutOfRangeException("maxReaderCount", "Need at least one reader");
 
 			this.maxReaderCount = maxReaderCount;
+			this.waitTimeout = waitTimeout;
 			mutex = new Mutex(false, "TinyReadWriteLock_Mutex_" + name);
 			semaphore = new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
 		}
 
 		public void Dispose()
 		{
-			ReleaseLock();
+			if (disposed)
+				return;
+
+			disposed = true;
+
+			if (readLocks > 0)
+			{
+				semaphore.Release(readLocks);
+			}
+			else if (writeLock)
+			{
+				semaphore.Release(maxReaderCount);
+			}
+
+			readLocks = 0;
+			writeLock = false;
 			mutex.Dispose();
 			semaphore.Dispose();
 		}
@@ -41,57 +65,71 @@ namespace TinyIpc
 		/// <summary>
 		/// Acquire one read lock
 		/// </summary>
-		/// <exception cref="InvalidOperationException">Thrown if write lock is already held</exception>
 		public void AcquireReadLock()
 		{
-			if (readLock)
-				return;
+			if (!mutex.WaitOne(waitTimeout))
+				throw new TimeoutException("Gave up waiting for read lock");
 
-			if (writeLock)
-				throw new InvalidOperationException("Can not acquire read lock because write lock is alread held");
+			try
+			{
+				if (!semaphore.WaitOne(waitTimeout))
+					throw new TimeoutException("Gave up waiting for read lock");
 
-			mutex.WaitOne();
-			semaphore.WaitOne();
-			mutex.ReleaseMutex();
-			readLock = true;
+				Interlocked.Increment(ref readLocks);
+			}
+			finally
+			{
+				mutex.ReleaseMutex();
+			}
 		}
 
 		/// <summary>
 		/// Acquires exclusive write locking by consuming all read locks
 		/// </summary>
-		/// <exception cref="InvalidOperationException">Thrown if read lock is already held</exception>
 		public void AcquireWriteLock()
 		{
-			if (readLock)
-				throw new InvalidOperationException("Can not acquire write lock because read lock is already held");
+			if (!mutex.WaitOne(waitTimeout))
+				throw new TimeoutException("Gave up waiting for write lock");
 
-			mutex.WaitOne();
-			for (var i = 0; i < maxReaderCount; i++)
-			{
-				semaphore.WaitOne();
-			}
-			mutex.ReleaseMutex();
-			writeLock = true;
-		}
-
-		/// <summary>
-		/// Will release any lock held
-		/// </summary>
-		public void ReleaseLock()
-		{
-			if (readLock)
-			{
-				semaphore.Release();
-				readLock = false;
-			}
-			if (writeLock)
+			var readersAcquired = 0;
+			try
 			{
 				for (var i = 0; i < maxReaderCount; i++)
 				{
-					semaphore.Release();
+					if (!semaphore.WaitOne(waitTimeout))
+						throw new TimeoutException("Gave up waiting for write lock");
+
+					readersAcquired++;
 				}
-				writeLock = false;
+				writeLock = true;
 			}
+			catch (TimeoutException)
+			{
+				semaphore.Release(readersAcquired);
+				throw;
+			}
+			finally
+			{
+				mutex.ReleaseMutex();
+			}
+		}
+
+		/// <summary>
+		/// Release one read lock
+		/// </summary>
+		public void ReleaseReadLock()
+		{
+			semaphore.Release();
+			Interlocked.Decrement(ref readLocks);
+		}
+
+		/// <summary>
+		/// Release write lock
+		/// </summary>
+		public void ReleaseWriteLock()
+		{
+			writeLock = false;
+			semaphore.Release(maxReaderCount);
 		}
 	}
 }
