@@ -56,12 +56,13 @@ Intend for quick broadcast messaging in desktop applications, it just works.
 ```csharp
 using (var messagebus = new TinyMessageBus("ExampleChannel"))
 {
-	messagebus.MessageReceived += (sender, received) => Console.WriteLine(received.Message);
+	messagebus.MessageReceived +=
+		(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
 
 	while (true)
 	{
 		var message = Console.ReadLine();
-		messagebus.Publish(message);
+		messagebus.PublishAsync(Encoding.UTF8.GetBytes(message));
 	}
 }
 ```

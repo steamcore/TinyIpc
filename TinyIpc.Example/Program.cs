@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using TinyIpc.Messaging;
 
 namespace TinyIpc.Example
@@ -9,12 +10,17 @@ namespace TinyIpc.Example
 		{
 			using (var messagebus = new TinyMessageBus("Example"))
 			{
-				messagebus.MessageReceived += (sender, e) => Console.WriteLine(e.Message);
+				messagebus.MessageReceived +=
+					(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
 
 				while (true)
 				{
 					var message = Console.ReadLine();
-					messagebus.PublishAsync(message);
+
+					if (string.IsNullOrWhiteSpace(message))
+						return;
+
+					messagebus.PublishAsync(Encoding.UTF8.GetBytes(message));
 				}
 			}
 		}

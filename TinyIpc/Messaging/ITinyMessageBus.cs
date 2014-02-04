@@ -22,6 +22,6 @@ namespace TinyIpc.Messaging
 		/// Publishes a message to the message bus as soon as possible in a background task
 		/// </summary>
 		/// <param name="message"></param>
-		void PublishAsync(string message);
+		void PublishAsync(byte[] message);
 	}
 }

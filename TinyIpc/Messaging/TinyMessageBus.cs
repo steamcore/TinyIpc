@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ProtoBuf;
@@ -14,8 +13,6 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
-		private static readonly Encoding MessageEncoding = Encoding.GetEncoding("UTF-16");
-
 		private readonly long messageOverhead;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
@@ -109,9 +106,9 @@ namespace TinyIpc.Messaging
 		/// Publishes a message to the message bus as soon as possible in a background task
 		/// </summary>
 		/// <param name="message"></param>
-		public void PublishAsync(string message)
+		public void PublishAsync(byte[] message)
 		{
-			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = MessageEncoding.GetBytes(message) });
+			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
 
 			if (waitingPublishers > 0)
 				return;
@@ -206,7 +203,7 @@ namespace TinyIpc.Messaging
 						continue;
 
 					if (MessageReceived != null)
-						MessageReceived(this, new TinyMessageReceivedEventArgs { Message = MessageEncoding.GetString(entry.Message) });
+						MessageReceived(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
 
 					Interlocked.Increment(ref messagesReceived);
 				}
