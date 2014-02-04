@@ -22,21 +22,23 @@ namespace TinyIpc.Messaging
 		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
+		private readonly object publishTasksLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool shouldDisposeFile;
 
 		private long lastEntryId;
 		private long messagesSent;
 		private long messagesReceived;
+		private Task[] publishTasks = new Task[0];
 		private int waitingReaders;
-		private int waitingWriters;
+		private int waitingPublishers;
 
 		/// <summary>
 		/// Called whenever a new message is received
 		/// </summary>
 		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		public bool MessagesBeingProcessed { get { return waitingReaders + waitingWriters > 0; } }
+		public bool MessagesBeingProcessed { get { return waitingReaders + waitingPublishers > 0; } }
 		public long MessagesSent { get { return messagesSent; } }
 		public long MessagesReceived { get { return messagesReceived; } }
 
@@ -83,6 +85,11 @@ namespace TinyIpc.Messaging
 		{
 			memoryMappedFile.FileUpdated -= HandleIncomingMessages;
 
+			lock (publishTasksLock)
+			{
+				Task.WaitAll(publishTasks);
+			}
+
 			if (shouldDisposeFile && memoryMappedFile is TinyMemoryMappedFile)
 			{
 				(memoryMappedFile as TinyMemoryMappedFile).Dispose();
@@ -106,19 +113,29 @@ namespace TinyIpc.Messaging
 		{
 			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = MessageEncoding.GetBytes(message) });
 
-			if (waitingWriters > 0)
+			if (waitingPublishers > 0)
 				return;
 
-			Task.Factory.StartNew(ProcessPublishQueue);
+			StartPublishTask();
+		}
+
+		private void StartPublishTask()
+		{
+			lock (publishTasksLock)
+			{
+				publishTasks = publishTasks.Where(x => !x.IsCompleted)
+					.Concat(new[] {Task.Factory.StartNew(ProcessPublishQueue)})
+					.ToArray();
+			}
 		}
 
 		private void ProcessPublishQueue()
 		{
-			Interlocked.Increment(ref waitingWriters);
+			Interlocked.Increment(ref waitingPublishers);
 
 			lock (messagePublisherLock)
 			{
-				Interlocked.Decrement(ref waitingWriters);
+				Interlocked.Decrement(ref waitingPublishers);
 
 				if (publishQueue.Count == 0)
 					return;
@@ -154,9 +171,9 @@ namespace TinyIpc.Messaging
 							Interlocked.Increment(ref messagesSent);
 						}
 
-						if (waitingWriters == 0 && publishQueue.Count > 0)
+						if (waitingPublishers == 0 && publishQueue.Count > 0)
 						{
-							Task.Factory.StartNew(ProcessPublishQueue);
+							StartPublishTask();
 						}
 
 						using (var memoryStream = new MemoryStream((int)logSize))
