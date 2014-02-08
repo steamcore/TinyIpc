@@ -13,7 +13,7 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
-		private readonly long messageOverhead;
+		private long messageOverhead;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
 		private readonly TimeSpan minMessageAge;
@@ -58,24 +58,12 @@ namespace TinyIpc.Messaging
 
 		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, TimeSpan minMessageAge)
 		{
-			Serializer.PrepareSerializer<Entry>();
-
-			using (var memoryStream = new MemoryStream())
-			{
-				Serializer.Serialize(memoryStream, new Entry { Id = long.MaxValue, Instance = instanceId, Timestamp = DateTime.UtcNow });
-				messageOverhead = memoryStream.Length;
-			}
-
 			this.minMessageAge = minMessageAge;
 			this.memoryMappedFile = memoryMappedFile;
 
-			var lastEntry = DeserializeLog(memoryMappedFile.Read()).LastOrDefault();
-			if (lastEntry != null)
-			{
-				lastEntryId = lastEntry.Id;
-			}
-
 			memoryMappedFile.FileUpdated += HandleIncomingMessages;
+
+			publishTasks = new []{ Task.Factory.StartNew(Warmup) };
 		}
 
 		public void Dispose()
@@ -93,6 +81,25 @@ namespace TinyIpc.Messaging
 			}
 		}
 
+		private void Warmup()
+		{
+			Serializer.PrepareSerializer<Entry>();
+			using (var memoryStream = new MemoryStream())
+			{
+				Serializer.Serialize(memoryStream, new Entry { Id = long.MaxValue, Instance = instanceId, Timestamp = DateTime.UtcNow });
+				messageOverhead = memoryStream.Length;
+			}
+
+			var lastEntry = DeserializeLog(memoryMappedFile.Read()).LastOrDefault();
+			if (lastEntry != null)
+			{
+				lastEntryId = lastEntry.Id;
+			}
+
+			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = new byte[0] });
+			ProcessPublishQueue();
+		}
+
 		/// <summary>
 		/// Resets MessagesSent and MessagesReceived counters
 		/// </summary>
@@ -108,6 +115,9 @@ namespace TinyIpc.Messaging
 		/// <param name="message"></param>
 		public void PublishAsync(byte[] message)
 		{
+			if (message == null || message.Length == 0)
+				throw new ArgumentException("Message can not be empty", "message");
+
 			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
 
 			if (waitingPublishers > 0)
@@ -199,7 +209,7 @@ namespace TinyIpc.Messaging
 				{
 					lastEntryId = entry.Id;
 
-					if (entry.Instance == instanceId)
+					if (entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
 						continue;
 
 					if (MessageReceived != null)
