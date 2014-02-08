@@ -4,6 +4,18 @@
 
 Intend for quick broadcast messaging in desktop applications, it just works.
 
+## Quick introduction ##
+
+* Designed to be serverless
+* Clients may drop in and out at any time
+* Messages expire after a specified timeout, default 500 milliseconds
+* The log is kept small for performance, default max log size is 1 MB
+* Writes are queued until there is enough space in the log
+
+## Benefits and drawbacks ##
+
+It's easy to use and there is no complicated setup. It is suited for small messages, so big messages probably need some other transport mechanism. With high enough troughput messages may be lost if receivers are not able to get a read lock before the message timeout is reached. However, hundreds or even a few thousand small messages a second should be fine.
+
 ## Compared to other solutions ##
 
 <table>
