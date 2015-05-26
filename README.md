@@ -2,7 +2,7 @@
 
 .NET inter process broadcast message bus and supporting classes, built with .NET 4 client profile, depends on protobuf-net.
 
-Intend for quick broadcast messaging in desktop applications, it just works.
+Intended for quick broadcast messaging in desktop applications, it just works.
 
 ## Quick introduction ##
 
@@ -36,7 +36,7 @@ It's easy to use and there is no complicated setup. It is suited for small messa
 		<td>&#x2717;</td>
 	</tr>
 	<tr>
-		<td>No server master process</td>
+		<td>No master process</td>
 		<td>&#x2713;</td>
 		<td>&#x2713;</td>
 		<td>&#x2713;</td>
