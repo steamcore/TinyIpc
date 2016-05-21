@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0-*",
+  "description": "TinyIpc tests",
+  "authors": [ "Steamcore" ],
+
+  "dependencies": {
+    "TinyIpc": {
+      "target": "project"
+    },
+    "xunit": "2.1.0"
+  },
+
+  "frameworks": {
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Runtime": "",
+        "System.Threading.Tasks": ""
+      }
+    }
+  }
+}

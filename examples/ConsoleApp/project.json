@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0-*",
+  "description": "TinyIpc console example",
+  "authors": [ "Steamcore" ],
+
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+
+  "dependencies": {
+    "TinyIpc": {
+      "target": "project"
+    }
+  },
+
+  "frameworks": {
+    "net451": {
+    }
+  }
+}

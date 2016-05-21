@@ -1,6 +1,6 @@
 # TinyIpc #
 
-.NET inter process broadcast message bus and supporting classes, built with .NET 4 client profile, depends on protobuf-net.
+.NET inter process broadcast message bus and supporting classes.
 
 Intended for quick broadcast messaging in desktop applications, it just works.
 
