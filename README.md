@@ -65,16 +65,19 @@ It's easy to use and there is no complicated setup. It is suited for small messa
 
 ## Simple example ##
 
+One message bus listening to the other.
+
 ```csharp
-using (var messagebus = new TinyMessageBus("ExampleChannel"))
+using (var messagebus1 = new TinyMessageBus("ExampleChannel"))
+using (var messagebus2 = new TinyMessageBus("ExampleChannel"))
 {
-	messagebus.MessageReceived +=
+	messagebus2.MessageReceived +=
 		(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
 
 	while (true)
 	{
 		var message = Console.ReadLine();
-		messagebus.PublishAsync(Encoding.UTF8.GetBytes(message));
+		messagebus1.PublishAsync(Encoding.UTF8.GetBytes(message));
 	}
 }
 ```
