@@ -13,13 +13,13 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
+		private bool disposed;
 		private long messageOverhead;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
 		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
-		private readonly object publishTasksLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool shouldDisposeFile;
 
@@ -27,6 +27,7 @@ namespace TinyIpc.Messaging
 		private long messagesSent;
 		private long messagesReceived;
 		private Task[] publishTasks = new Task[0];
+		private Task[] readTasks = new Task[0];
 		private int waitingReaders;
 		private int waitingPublishers;
 
@@ -63,17 +64,16 @@ namespace TinyIpc.Messaging
 
 			memoryMappedFile.FileUpdated += HandleIncomingMessages;
 
-			publishTasks = new []{ Task.Factory.StartNew(Warmup) };
+			Warmup();
 		}
 
 		public void Dispose()
 		{
 			memoryMappedFile.FileUpdated -= HandleIncomingMessages;
 
-			lock (publishTasksLock)
-			{
-				Task.WaitAll(publishTasks);
-			}
+			disposed = true;
+
+			WaitAll();
 
 			if (shouldDisposeFile && memoryMappedFile is TinyMemoryMappedFile)
 			{
@@ -81,6 +81,9 @@ namespace TinyIpc.Messaging
 			}
 		}
 
+		/// <summary>
+		/// Performs a synchonous warmup pass to make sure everything is jitted
+		/// </summary>
 		private void Warmup()
 		{
 			Serializer.PrepareSerializer<Entry>();
@@ -115,6 +118,9 @@ namespace TinyIpc.Messaging
 		/// <param name="message"></param>
 		public void PublishAsync(byte[] message)
 		{
+			if (disposed)
+				throw new ObjectDisposedException("Can not publish messages when diposed");
+
 			if (message == null || message.Length == 0)
 				throw new ArgumentException("Message can not be empty", nameof(message));
 
@@ -126,14 +132,30 @@ namespace TinyIpc.Messaging
 			StartPublishTask();
 		}
 
+		internal void WaitAll()
+		{
+			Task.WaitAll(publishTasks);
+			Task.WaitAll(readTasks);
+		}
+
 		private void StartPublishTask()
 		{
-			lock (publishTasksLock)
-			{
-				publishTasks = publishTasks.Where(x => !x.IsCompleted)
-					.Concat(new[] {Task.Factory.StartNew(ProcessPublishQueue)})
-					.ToArray();
-			}
+			if (disposed)
+				return;
+
+			publishTasks = publishTasks.Where(x => !x.IsCompleted)
+				.Concat(new[] {Task.Factory.StartNew(ProcessPublishQueue)})
+				.ToArray();
+		}
+
+		private void StartReadTask()
+		{
+			if (disposed)
+				return;
+
+			readTasks = readTasks.Where(x => !x.IsCompleted)
+				.Concat(new[] { Task.Factory.StartNew(ProcessIncomingMessages) })
+				.ToArray();
 		}
 
 		private void ProcessPublishQueue()
@@ -150,6 +172,7 @@ namespace TinyIpc.Messaging
 				memoryMappedFile.ReadWrite(
 					data =>
 					{
+						// Retreive the log but skip messages older than minimum message age
 						var cutoffPoint = DateTime.UtcNow - minMessageAge;
 						var log = DeserializeLog(data).SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
 						var logSize = log.Select(l => messageOverhead + l.Message.Length).Sum();
@@ -165,24 +188,33 @@ namespace TinyIpc.Messaging
 						{
 							Entry entry;
 
+							// Check if the next message will fit in the log
 							if (!publishQueue.TryPeek(out entry) || logSize + messageOverhead + entry.Message.Length > memoryMappedFile.MaxFileSize)
 								break;
 
 							if (!publishQueue.TryDequeue(out entry))
 								break;
 
+							// Write the entry to the log even if the message is empty. Never leave the log empty.
 							entry.Id = nextId++;
 							entry.Timestamp = batchTime;
 							log.Add(entry);
 							logSize += messageOverhead + entry.Message.Length;
+
+							// Skip counting empty messages though, they are skipped on the receiving end anyway
+							if (entry.Message == null || entry.Message.Length == 0)
+								continue;
+
 							Interlocked.Increment(ref messagesSent);
 						}
 
+						// Start a new publish task if there are messages left in the queue
 						if (waitingPublishers == 0 && publishQueue.Count > 0)
 						{
 							StartPublishTask();
 						}
 
+						// Flush the updated log to the memory mapped file
 						using (var memoryStream = new MemoryStream((int)logSize))
 						{
 							Serializer.Serialize(memoryStream, log);
@@ -194,9 +226,14 @@ namespace TinyIpc.Messaging
 
 		private void HandleIncomingMessages(object sender, EventArgs args)
 		{
-			if (waitingReaders > 0 || MessageReceived == null)
+			if (waitingReaders > 0)
 				return;
 
+			StartReadTask();
+		}
+
+		internal void ProcessIncomingMessages()
+		{
 			Interlocked.Increment(ref waitingReaders);
 
 			lock (messageReaderLock)

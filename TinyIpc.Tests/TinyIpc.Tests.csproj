@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TinyMemoryMappedFileTests.cs" />
+    <Compile Include="TinyMessageBusTests.cs" />
     <Compile Include="TinyReadWriteLockTests.cs" />
   </ItemGroup>
   <ItemGroup>

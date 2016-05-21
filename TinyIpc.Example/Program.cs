@@ -8,10 +8,11 @@ namespace TinyIpc.Example
 	{
 		public static void Main(string[] args)
 		{
-			using (var messagebus = new TinyMessageBus("Example"))
+			using (var messagebus1 = new TinyMessageBus("Example"))
+			using (var messagebus2 = new TinyMessageBus("Example"))
 			{
-				messagebus.MessageReceived +=
-					(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
+				messagebus1.MessageReceived +=
+					(sender, e) => Console.WriteLine("Received: " + Encoding.UTF8.GetString(e.Message));
 
 				while (true)
 				{
@@ -20,7 +21,7 @@ namespace TinyIpc.Example
 					if (string.IsNullOrWhiteSpace(message))
 						return;
 
-					messagebus.PublishAsync(Encoding.UTF8.GetBytes(message));
+					messagebus2.PublishAsync(Encoding.UTF8.GetBytes(message));
 				}
 			}
 		}
