@@ -61,13 +61,13 @@ namespace TinyIpc.Tests
 				readWriteLock1.AcquireWriteLock();
 
 				Task.Factory.StartNew(() => readWriteLock2.AcquireReadLock());
-				Thread.Sleep(10);
+				Thread.Sleep(50);
 
 				Assert.True(readWriteLock1.IsWriterLockHeld);
 				Assert.False(readWriteLock2.IsReaderLockHeld);
 
 				readWriteLock1.ReleaseWriteLock();
-				Thread.Sleep(10);
+				Thread.Sleep(50);
 
 				Assert.False(readWriteLock1.IsWriterLockHeld);
 				Assert.True(readWriteLock2.IsReaderLockHeld);
