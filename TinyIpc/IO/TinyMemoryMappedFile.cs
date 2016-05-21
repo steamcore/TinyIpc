@@ -37,6 +37,12 @@ namespace TinyIpc.IO
 
 		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock)
 		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentException("File must be named", nameof(name));
+
+			if (maxFileSize <= 0)
+				throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
+
 			this.maxFileSize = maxFileSize;
 			this.readWriteLock = readWriteLock;
 
