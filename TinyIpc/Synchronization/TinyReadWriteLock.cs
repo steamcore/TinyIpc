@@ -18,8 +18,8 @@ namespace TinyIpc.Synchronization
 		private int readLocks;
 		private bool writeLock;
 
-		public bool IsReaderLockHeld { get { return readLocks > 0; } }
-		public bool IsWriterLockHeld { get { return writeLock; } }
+		public bool IsReaderLockHeld => readLocks > 0;
+		public bool IsWriterLockHeld => writeLock;
 
 		public TinyReadWriteLock(string name, int maxReaderCount)
 			: this(name, maxReaderCount, TimeSpan.FromSeconds(5))
@@ -29,10 +29,10 @@ namespace TinyIpc.Synchronization
 		public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout)
 		{
 			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentException("Lock must be named", "name");
+				throw new ArgumentException("Lock must be named", nameof(name));
 
 			if (maxReaderCount == 0)
-				throw new ArgumentOutOfRangeException("maxReaderCount", "Need at least one reader");
+				throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
 
 			this.maxReaderCount = maxReaderCount;
 			this.waitTimeout = waitTimeout;

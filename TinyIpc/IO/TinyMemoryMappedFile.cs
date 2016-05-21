@@ -22,7 +22,7 @@ namespace TinyIpc.IO
 
 		public event EventHandler FileUpdated;
 
-		public long MaxFileSize { get { return maxFileSize; } }
+		public long MaxFileSize => maxFileSize;
 
 		public TinyMemoryMappedFile(string name)
 			: this(name, 1024 * 1024)
@@ -118,7 +118,7 @@ namespace TinyIpc.IO
 		public void Write(byte[] data)
 		{
 			if (data.Length > maxFileSize)
-				throw new ArgumentOutOfRangeException("data", "Length greater than max file size");
+				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
 			readWriteLock.AcquireWriteLock();
 
@@ -179,7 +179,7 @@ namespace TinyIpc.IO
 		private void InternalWrite(byte[] data)
 		{
 			if (data.Length > maxFileSize)
-				throw new ArgumentOutOfRangeException("data", "Length greater than max file size");
+				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
 			using (var accessor = memoryMappedFile.CreateViewAccessor())
 			{

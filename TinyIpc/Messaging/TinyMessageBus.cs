@@ -35,9 +35,9 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		public bool MessagesBeingProcessed { get { return waitingReaders + waitingPublishers > 0; } }
-		public long MessagesSent { get { return messagesSent; } }
-		public long MessagesReceived { get { return messagesReceived; } }
+		public bool MessagesBeingProcessed => waitingReaders + waitingPublishers > 0;
+		public long MessagesSent => messagesSent;
+		public long MessagesReceived => messagesReceived;
 
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name))
@@ -116,7 +116,7 @@ namespace TinyIpc.Messaging
 		public void PublishAsync(byte[] message)
 		{
 			if (message == null || message.Length == 0)
-				throw new ArgumentException("Message can not be empty", "message");
+				throw new ArgumentException("Message can not be empty", nameof(message));
 
 			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
 
@@ -154,7 +154,7 @@ namespace TinyIpc.Messaging
 						var log = DeserializeLog(data).SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
 						var logSize = log.Select(l => messageOverhead + l.Message.Length).Sum();
 						var lastEntry = log.LastOrDefault();
-						var nextId = Math.Max(lastEntryId, lastEntry != null ? lastEntry.Id : 0) + 1;
+						var nextId = Math.Max(lastEntryId, lastEntry?.Id ?? 0) + 1;
 
 						// Start slot timer after deserializing log so deserialization doesn't starve the slot time
 						var slotTimer = Stopwatch.StartNew();
@@ -212,8 +212,7 @@ namespace TinyIpc.Messaging
 					if (entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
 						continue;
 
-					if (MessageReceived != null)
-						MessageReceived(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
+					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
 
 					Interlocked.Increment(ref messagesReceived);
 				}
