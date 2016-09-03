@@ -1,7 +1,13 @@
 {
   "version": "1.0.0-*",
+  "title": "TinyIpc",
   "description": ".NET inter process broadcast message bus.",
   "authors": [ "Steamcore" ],
+  "projectUrl": "https://github.com/steamcore/TinyIpc",
+
+  "packOptions": {
+    "licenseUrl": "https://github.com/steamcore/TinyIpc/blob/master/LICENSE"
+  },
 
   "dependencies": {
     "protobuf-net": "2.1.0-alpha-1"
