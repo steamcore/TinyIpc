@@ -1,6 +1,6 @@
 # TinyIpc #
 
-.NET inter process broadcast message bus and supporting classes.
+.NET inter process broadcast message bus.
 
 Intended for quick broadcast messaging in desktop applications, it just works.
 

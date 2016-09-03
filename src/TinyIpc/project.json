@@ -1,6 +1,6 @@
 {
   "version": "1.0.0-*",
-  "description": "TinyIpc",
+  "description": ".NET inter process broadcast message bus.",
   "authors": [ "Steamcore" ],
 
   "dependencies": {
