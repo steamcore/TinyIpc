@@ -3,10 +3,10 @@
   "title": "TinyIpc",
   "description": ".NET inter process broadcast message bus.",
   "authors": [ "Steamcore" ],
-  "projectUrl": "https://github.com/steamcore/TinyIpc",
 
   "packOptions": {
-    "licenseUrl": "https://github.com/steamcore/TinyIpc/blob/master/LICENSE"
+    "licenseUrl": "https://github.com/steamcore/TinyIpc/blob/master/LICENSE",
+    "projectUrl": "https://github.com/steamcore/TinyIpc"
   },
 
   "dependencies": {
