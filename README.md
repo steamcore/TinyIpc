@@ -1,5 +1,7 @@
 # TinyIpc #
 
+[![NuGet](https://img.shields.io/nuget/v/TinyIpc.svg?maxAge=259200)](https://www.nuget.org/packages/TinyIpc/)
+
 .NET inter process broadcast message bus.
 
 Intended for quick broadcast messaging in desktop applications, it just works.
