@@ -1,5 +1,6 @@
 [Bb]in/
 [Oo]bj/
+.cr/
 .vs/
 
 *.lock.json
