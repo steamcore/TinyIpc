@@ -177,7 +177,11 @@ namespace TinyIpc.IO
 			{
 				var length = accessor.ReadInt32(0);
 				var data = new byte[length];
-				accessor.ReadArray(sizeof(int), data, 0, length);
+				var pos = sizeof(int);
+				for (int i = 0; i < length; i++)
+				{
+					data[i] = accessor.ReadByte(pos + i);
+				}
 				return data;
 			}
 		}
@@ -190,7 +194,11 @@ namespace TinyIpc.IO
 			using (var accessor = memoryMappedFile.CreateViewAccessor())
 			{
 				accessor.Write(0, data.Length);
-				accessor.WriteArray(sizeof (int), data, 0, data.Length);
+				var pos = sizeof(int);
+				for (int i = 0; i < data.Length; i++)
+				{
+					accessor.Write(pos + i, data[i]);
+				}
 			}
 
 			waitHandle.Set();

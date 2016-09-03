@@ -2,7 +2,7 @@
 using System.Text;
 using TinyIpc.Messaging;
 
-namespace TinyIpc.Example
+namespace ConsoleApp
 {
 	public class Program
 	{

@@ -1,14 +1,13 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Text;
 using TinyIpc.Messaging;
+using Xunit;
 
 namespace TinyIpc.Tests
 {
-	[TestFixture]
 	public class TinyMessageBusTests
 	{
-		[Test]
+		[Fact]
 		public static void Messages_sent_from_one_bus_should_be_received_by_the_other()
 		{
 			using (var messagebus1 = new TinyMessageBus("Example"))
@@ -25,11 +24,11 @@ namespace TinyIpc.Tests
 				messagebus1.ProcessIncomingMessages();
 				messagebus2.ProcessIncomingMessages();
 
-				Assert.That(received, Is.EqualTo("yes"));
+				Assert.Equal("yes", received);
 			}
 		}
 
-		[Test]
+		[Fact]
 		public static void All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario()
 		{
 			var rnd = new Random();
@@ -65,9 +64,9 @@ namespace TinyIpc.Tests
 					messagebus3.ProcessIncomingMessages();
 
 					// Counters should check out
-					Assert.That(messagebus1.MessagesReceived, Is.EqualTo(1024 - messagebus1.MessagesSent));
-					Assert.That(messagebus2.MessagesReceived, Is.EqualTo(1024 - messagebus2.MessagesSent));
-					Assert.That(messagebus3.MessagesReceived, Is.EqualTo(512 - messagebus3.MessagesSent));
+					Assert.Equal(1024 - messagebus1.MessagesSent, messagebus1.MessagesReceived);
+					Assert.Equal(1024 - messagebus2.MessagesSent, messagebus2.MessagesReceived);
+					Assert.Equal(512 - messagebus3.MessagesSent, messagebus3.MessagesReceived);
 				}
 			}
 		}
