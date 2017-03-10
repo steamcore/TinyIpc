@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>.NET inter process broadcast message bus.</Description>
+    <AssemblyTitle>TinyIpc</AssemblyTitle>
+    <Authors>Steamcore</Authors>
+    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
+    <AssemblyName>TinyIpc</AssemblyName>
+    <PackageId>TinyIpc</PackageId>
+    <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/steamcore/TinyIpc/blob/master/LICENSE</PackageLicenseUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="protobuf-net" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
+    <PackageReference Include="System.Collections.Concurrent" Version="4.3.0" />
+    <PackageReference Include="System.IO.MemoryMappedFiles" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>

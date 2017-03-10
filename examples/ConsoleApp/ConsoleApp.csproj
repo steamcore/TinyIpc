@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>TinyIpc console example</Description>
+    <Authors>Steamcore</Authors>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <AssemblyName>ConsoleApp</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>ConsoleApp</PackageId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TinyIpc\TinyIpc.csproj" />
+  </ItemGroup>
+
+</Project>

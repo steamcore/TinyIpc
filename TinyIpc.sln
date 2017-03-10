@@ -1,19 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TinyIpc", "src\TinyIpc\TinyIpc.xproj", "{45DC56B8-5AF0-48CD-B123-93CEACBCDDC8}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{099CF2BC-2C8A-4F4E-A56D-559AEB8C54B0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{8B328111-CA92-45E0-B801-29F4283703FD}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ConsoleApp", "examples\ConsoleApp\ConsoleApp.xproj", "{B7DEF87E-78A6-4A95-8EAD-2669CA4B7D8C}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TinyIpc.Tests", "test\TinyIpc.Tests\TinyIpc.Tests.xproj", "{7743E174-4B64-43B0-AB34-A1EA6EBD6640}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{AD019FAE-3B2F-4184-9038-AA9F244A4242}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TinyIpc", "src\TinyIpc\TinyIpc.csproj", "{45DC56B8-5AF0-48CD-B123-93CEACBCDDC8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleApp", "examples\ConsoleApp\ConsoleApp.csproj", "{B7DEF87E-78A6-4A95-8EAD-2669CA4B7D8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TinyIpc.Tests", "test\TinyIpc.Tests\TinyIpc.Tests.csproj", "{7743E174-4B64-43B0-AB34-A1EA6EBD6640}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
