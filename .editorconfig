@@ -16,3 +16,7 @@ indent_size = 2
 
 [*.md]
 charset = utf-8
+
+[*.ps1]
+charset = utf-8
+indent_style = tab
