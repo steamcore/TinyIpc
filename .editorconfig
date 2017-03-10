@@ -1,0 +1,18 @@
+root = true
+
+[*]
+end_of_line = crlf
+indent_style = tab
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+charset = utf-8
+indent_style = tab
+
+[*.csproj]
+indent_style = space
+indent_size = 2
+
+[*.md]
+charset = utf-8
