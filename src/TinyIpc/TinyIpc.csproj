@@ -9,6 +9,7 @@
     <PackageId>TinyIpc</PackageId>
     <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/steamcore/TinyIpc/blob/master/LICENSE</PackageLicenseUrl>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
