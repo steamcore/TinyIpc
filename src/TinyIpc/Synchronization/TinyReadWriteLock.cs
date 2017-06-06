@@ -21,8 +21,16 @@ namespace TinyIpc.Synchronization
 		public bool IsReaderLockHeld => readLocks > 0;
 		public bool IsWriterLockHeld => writeLock;
 
+		public const int DefaultMaxReaderCount = 3;
+		public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(5);
+
+		public TinyReadWriteLock(string name)
+			: this(name, DefaultMaxReaderCount, DefaultWaitTimeout)
+		{
+		}
+
 		public TinyReadWriteLock(string name, int maxReaderCount)
-			: this(name, maxReaderCount, TimeSpan.FromSeconds(5))
+			: this(name, maxReaderCount, DefaultWaitTimeout)
 		{
 		}
 
@@ -36,8 +44,20 @@ namespace TinyIpc.Synchronization
 
 			this.maxReaderCount = maxReaderCount;
 			this.waitTimeout = waitTimeout;
-			mutex = new Mutex(false, "TinyReadWriteLock_Mutex_" + name);
-			semaphore = new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
+
+			mutex = CreateMutex(name);
+			semaphore = CreateSemaphore(name, maxReaderCount);
+		}
+
+		public TinyReadWriteLock(Mutex mutex, Semaphore semaphore, int maxReaderCount, TimeSpan waitTimeout)
+		{
+			if (maxReaderCount <= 0)
+				throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
+
+			this.maxReaderCount = maxReaderCount;
+			this.waitTimeout = waitTimeout;
+			this.mutex = mutex;
+			this.semaphore = semaphore;
 		}
 
 		public void Dispose()
@@ -130,6 +150,16 @@ namespace TinyIpc.Synchronization
 		{
 			writeLock = false;
 			semaphore.Release(maxReaderCount);
+		}
+
+		public static Mutex CreateMutex(string name)
+		{
+			return new Mutex(false, "TinyReadWriteLock_Mutex_" + name);
+		}
+
+		public static Semaphore CreateSemaphore(string name, int maxReaderCount)
+		{
+			return new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
 		}
 	}
 }

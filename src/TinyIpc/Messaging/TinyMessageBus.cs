@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +21,7 @@ namespace TinyIpc.Messaging
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
-		private readonly bool shouldDisposeFile;
+		private readonly bool disposeFile;
 
 		private long lastEntryId;
 		private long messagesSent;
@@ -40,27 +40,28 @@ namespace TinyIpc.Messaging
 		public long MessagesSent => messagesSent;
 		public long MessagesReceived => messagesReceived;
 
+		public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(500);
+
 		public TinyMessageBus(string name)
-			: this(new TinyMemoryMappedFile(name))
+			: this(new TinyMemoryMappedFile(name), true)
 		{
-			shouldDisposeFile = true;
 		}
 
 		public TinyMessageBus(string name, TimeSpan minMessageAge)
-			: this(new TinyMemoryMappedFile(name), minMessageAge)
-		{
-			shouldDisposeFile = true;
-		}
-
-		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile)
-			: this(memoryMappedFile, TimeSpan.FromMilliseconds(500))
+			: this(new TinyMemoryMappedFile(name), true, minMessageAge)
 		{
 		}
 
-		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, TimeSpan minMessageAge)
+		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile)
+			: this(memoryMappedFile, disposeFile, DefaultMinMessageAge)
+		{
+		}
+
+		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, TimeSpan minMessageAge)
 		{
 			this.minMessageAge = minMessageAge;
 			this.memoryMappedFile = memoryMappedFile;
+			this.disposeFile = disposeFile;
 
 			memoryMappedFile.FileUpdated += HandleIncomingMessages;
 
@@ -75,7 +76,7 @@ namespace TinyIpc.Messaging
 
 			WaitAll();
 
-			if (shouldDisposeFile && memoryMappedFile is TinyMemoryMappedFile)
+			if (disposeFile && memoryMappedFile is TinyMemoryMappedFile)
 			{
 				(memoryMappedFile as TinyMemoryMappedFile).Dispose();
 			}

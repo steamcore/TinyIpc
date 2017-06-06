@@ -15,7 +15,7 @@ namespace TinyIpc.IO
 		private readonly long maxFileSize;
 		private readonly MemoryMappedFile memoryMappedFile;
 		private readonly ITinyReadWriteLock readWriteLock;
-		private readonly bool shouldDisposeLock;
+		private readonly bool disposeLock;
 		private readonly EventWaitHandle waitHandle;
 
 		private bool disposed;
@@ -24,18 +24,19 @@ namespace TinyIpc.IO
 
 		public long MaxFileSize => maxFileSize;
 
+		public const int DefaultMaxFileSize = 1024 * 1024;
+
 		public TinyMemoryMappedFile(string name)
-			: this(name, 1024 * 1024)
+			: this(name, DefaultMaxFileSize)
 		{
 		}
 
 		public TinyMemoryMappedFile(string name, long maxFileSize)
-			: this(name, maxFileSize, new TinyReadWriteLock(name, 3))
+			: this(name, maxFileSize, new TinyReadWriteLock(name), true)
 		{
-			shouldDisposeLock = true;
 		}
 
-		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock)
+		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 		{
 			if (string.IsNullOrWhiteSpace(name))
 				throw new ArgumentException("File must be named", nameof(name));
@@ -45,9 +46,24 @@ namespace TinyIpc.IO
 
 			this.maxFileSize = maxFileSize;
 			this.readWriteLock = readWriteLock;
+			this.disposeLock = disposeLock;
 
-			memoryMappedFile = MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
-			waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
+			memoryMappedFile = CreateOrOpenMemoryMappedFile(name, maxFileSize);
+			waitHandle = CreateEventWaitHandle(name);
+			fileWatcherTask = Task.Factory.StartNew(FileWatcher);
+		}
+
+		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle waitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
+		{
+			if (maxFileSize <= 0)
+				throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
+
+			this.maxFileSize = maxFileSize;
+			this.readWriteLock = readWriteLock;
+			this.disposeLock = disposeLock;
+
+			this.memoryMappedFile = memoryMappedFile;
+			this.waitHandle = waitHandle;
 			fileWatcherTask = Task.Factory.StartNew(FileWatcher);
 		}
 
@@ -70,7 +86,7 @@ namespace TinyIpc.IO
 			{
 				memoryMappedFile.Dispose();
 
-				if (shouldDisposeLock && readWriteLock is TinyReadWriteLock)
+				if (disposeLock && readWriteLock is TinyReadWriteLock)
 				{
 					(readWriteLock as TinyReadWriteLock).Dispose();
 				}
@@ -202,6 +218,16 @@ namespace TinyIpc.IO
 			}
 
 			waitHandle.Set();
+		}
+
+		public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
+		{
+			return MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
+		}
+
+		public static EventWaitHandle CreateEventWaitHandle(string name)
+		{
+			return new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
 		}
 	}
 }
