@@ -31,7 +31,7 @@ namespace TinyIpc.Synchronization
 			if (string.IsNullOrWhiteSpace(name))
 				throw new ArgumentException("Lock must be named", nameof(name));
 
-			if (maxReaderCount == 0)
+			if (maxReaderCount <= 0)
 				throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
 
 			this.maxReaderCount = maxReaderCount;
