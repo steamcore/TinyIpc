@@ -4,7 +4,7 @@
     <Description>.NET inter process broadcast message bus.</Description>
     <AssemblyTitle>TinyIpc</AssemblyTitle>
     <Authors>Steamcore</Authors>
-    <TargetFrameworks>net45;netstandard1.3</TargetFrameworks>
+    <TargetFrameworks>net45;netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyName>TinyIpc</AssemblyName>
     <PackageId>TinyIpc</PackageId>
     <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
