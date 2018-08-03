@@ -49,6 +49,7 @@ namespace TinyIpc.Tests
 			}
 		}
 
+		[Theory]
 		[InlineData("")]
 		[InlineData("test")]
 		[InlineData("lorem ipsum dolor sit amet")]
