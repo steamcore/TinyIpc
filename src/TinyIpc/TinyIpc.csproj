@@ -1,14 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>.NET inter process broadcast message bus.</Description>
     <AssemblyTitle>TinyIpc</AssemblyTitle>
-    <Authors>Steamcore</Authors>
     <TargetFrameworks>net45;netstandard1.3;netstandard2.0</TargetFrameworks>
     <AssemblyName>TinyIpc</AssemblyName>
     <PackageId>TinyIpc</PackageId>
-    <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/steamcore/TinyIpc/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>

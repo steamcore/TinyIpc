@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <PropertyGroup>
+    <Authors>Steamcore</Authors>
+    <Description>.NET inter process broadcast message bus.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageLicenseUrl>https://github.com/steamcore/TinyIpc/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
+  </PropertyGroup>
+
+</Project>
