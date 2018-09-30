@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-	<DebugType>embedded</DebugType>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
 </Project>
