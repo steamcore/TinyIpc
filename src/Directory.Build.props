@@ -9,6 +9,11 @@
   <PropertyGroup>
     <PackageLicenseUrl>https://github.com/steamcore/TinyIpc/blob/master/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+  </PropertyGroup>
+
+  <PropertyGroup>
+	<DebugType>embedded</DebugType>
   </PropertyGroup>
 
 </Project>

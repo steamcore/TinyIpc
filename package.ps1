@@ -23,5 +23,5 @@ Enter-Task "Test" {
 
 Enter-Task "Package" {
 	$outputPath = (Get-Item ".").FullName
-	dotnet pack .\src\TinyIpc\TinyIpc.csproj --configuration Release --output $outputPath /p:Version=$Version
+	dotnet pack .\src\TinyIpc\TinyIpc.csproj --configuration Release --output $outputPath /p:Version=$Version /p:EnableSourcelink="true"
 }
