@@ -20,6 +20,8 @@ namespace TinyIpc.Messaging
 		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
+		private readonly object publishTaskLock = new object();
+		private readonly object readTaskLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool disposeFile;
 
@@ -144,9 +146,12 @@ namespace TinyIpc.Messaging
 			if (disposed)
 				return;
 
-			publishTasks = publishTasks.Where(x => !x.IsCompleted)
-				.Concat(new[] { Task.Run(() => ProcessPublishQueue()) })
-				.ToArray();
+			lock (publishTaskLock)
+			{
+				publishTasks = publishTasks.Where(x => !x.IsCompleted)
+					.Concat(new[] { Task.Run(() => ProcessPublishQueue()) })
+					.ToArray();
+			}
 		}
 
 		private void StartReadTask()
@@ -154,9 +159,12 @@ namespace TinyIpc.Messaging
 			if (disposed)
 				return;
 
-			readTasks = readTasks.Where(x => !x.IsCompleted)
-				.Concat(new[] { Task.Run(() => ProcessIncomingMessages()) })
-				.ToArray();
+			lock (readTaskLock)
+			{
+				readTasks = readTasks.Where(x => !x.IsCompleted)
+					.Concat(new[] { Task.Run(() => ProcessIncomingMessages()) })
+					.ToArray();
+			}
 		}
 
 		private void ProcessPublishQueue()
