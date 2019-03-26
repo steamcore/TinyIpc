@@ -151,6 +151,7 @@ namespace TinyIpc.IO
 			finally
 			{
 				readWriteLock.ReleaseWriteLock();
+				waitHandle.Set();
 			}
 		}
 
@@ -168,6 +169,7 @@ namespace TinyIpc.IO
 			finally
 			{
 				readWriteLock.ReleaseWriteLock();
+				waitHandle.Set();
 			}
 		}
 
@@ -216,8 +218,6 @@ namespace TinyIpc.IO
 					accessor.Write(pos + i, data[i]);
 				}
 			}
-
-			waitHandle.Set();
 		}
 
 		public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
