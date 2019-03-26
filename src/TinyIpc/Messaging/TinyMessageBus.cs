@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -145,7 +145,7 @@ namespace TinyIpc.Messaging
 				return;
 
 			publishTasks = publishTasks.Where(x => !x.IsCompleted)
-				.Concat(new[] {Task.Factory.StartNew(ProcessPublishQueue)})
+				.Concat(new[] { Task.Run(() => ProcessPublishQueue()) })
 				.ToArray();
 		}
 
@@ -155,7 +155,7 @@ namespace TinyIpc.Messaging
 				return;
 
 			readTasks = readTasks.Where(x => !x.IsCompleted)
-				.Concat(new[] { Task.Factory.StartNew(ProcessIncomingMessages) })
+				.Concat(new[] { Task.Run(() => ProcessIncomingMessages()) })
 				.ToArray();
 		}
 

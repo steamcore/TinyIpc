@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,7 +36,7 @@ namespace TinyIpc.Tests
 			{
 				readWriteLock1.AcquireReadLock();
 
-				Task.Factory.StartNew(() => readWriteLock2.AcquireWriteLock());
+				Task.Run(() => readWriteLock2.AcquireWriteLock());
 				Thread.Sleep(10);
 
 				Assert.True(readWriteLock1.IsReaderLockHeld);
@@ -60,7 +60,7 @@ namespace TinyIpc.Tests
 			{
 				readWriteLock1.AcquireWriteLock();
 
-				Task.Factory.StartNew(() => readWriteLock2.AcquireReadLock());
+				Task.Run(() => readWriteLock2.AcquireReadLock());
 				Thread.Sleep(50);
 
 				Assert.True(readWriteLock1.IsWriterLockHeld);
@@ -112,7 +112,7 @@ namespace TinyIpc.Tests
 			{
 				readWriteLock1.AcquireWriteLock();
 
-				Task.Factory.StartNew(() => readWriteLock2.AcquireWriteLock());
+				Task.Run(() => readWriteLock2.AcquireWriteLock());
 
 				Thread.Sleep(10);
 
@@ -138,7 +138,7 @@ namespace TinyIpc.Tests
 
 			locks.Take(n).ToList().ForEach(l => l.AcquireReadLock());
 
-			Task.Factory.StartNew(() => locks.Last().AcquireReadLock());
+			Task.Run(() => locks.Last().AcquireReadLock());
 			Thread.Sleep(10);
 
 			locks.Take(n).ToList().ForEach(l => Assert.True(l.IsReaderLockHeld));

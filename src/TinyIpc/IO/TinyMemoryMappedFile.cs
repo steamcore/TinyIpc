@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,7 +50,7 @@ namespace TinyIpc.IO
 
 			memoryMappedFile = CreateOrOpenMemoryMappedFile(name, maxFileSize);
 			waitHandle = CreateEventWaitHandle(name);
-			fileWatcherTask = Task.Factory.StartNew(FileWatcher);
+			fileWatcherTask = Task.Run(() => FileWatcher());
 		}
 
 		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle waitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
@@ -64,7 +64,7 @@ namespace TinyIpc.IO
 
 			this.memoryMappedFile = memoryMappedFile;
 			this.waitHandle = waitHandle;
-			fileWatcherTask = Task.Factory.StartNew(FileWatcher);
+			fileWatcherTask = Task.Run(() => FileWatcher());
 		}
 
 		public void Dispose()
@@ -181,7 +181,7 @@ namespace TinyIpc.IO
 					return;
 
 				if (FileUpdated != null)
-					Task.Factory.StartNew(() => FileUpdated(this, EventArgs.Empty));
+					Task.Run(() => FileUpdated(this, EventArgs.Empty));
 
 				waitHandle.Reset();
 			}
