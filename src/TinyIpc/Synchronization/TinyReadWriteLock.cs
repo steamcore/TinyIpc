@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 
 namespace TinyIpc.Synchronization
@@ -123,7 +123,7 @@ namespace TinyIpc.Synchronization
 				}
 				writeLock = true;
 			}
-			catch (TimeoutException)
+			catch (TimeoutException) when (readersAcquired > 0)
 			{
 				semaphore.Release(readersAcquired);
 				throw;
