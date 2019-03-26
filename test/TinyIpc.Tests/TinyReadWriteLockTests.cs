@@ -36,14 +36,16 @@ namespace TinyIpc.Tests
 			{
 				readWriteLock1.AcquireReadLock();
 
-				Task.Run(() => readWriteLock2.AcquireWriteLock());
-				Thread.Sleep(10);
+				var writeLockTask = Task.Run(() => readWriteLock2.AcquireWriteLock());
+
+				WaitForTaskToStart(writeLockTask);
 
 				Assert.True(readWriteLock1.IsReaderLockHeld);
 				Assert.False(readWriteLock2.IsWriterLockHeld);
 
 				readWriteLock1.ReleaseReadLock();
-				Thread.Sleep(10);
+
+				writeLockTask.Wait();
 
 				Assert.False(readWriteLock1.IsReaderLockHeld);
 				Assert.True(readWriteLock2.IsWriterLockHeld);
@@ -60,14 +62,16 @@ namespace TinyIpc.Tests
 			{
 				readWriteLock1.AcquireWriteLock();
 
-				Task.Run(() => readWriteLock2.AcquireReadLock());
-				Thread.Sleep(50);
+				var readLockTask = Task.Run(() => readWriteLock2.AcquireReadLock());
+
+				WaitForTaskToStart(readLockTask);
 
 				Assert.True(readWriteLock1.IsWriterLockHeld);
 				Assert.False(readWriteLock2.IsReaderLockHeld);
 
 				readWriteLock1.ReleaseWriteLock();
-				Thread.Sleep(50);
+
+				readLockTask.Wait();
 
 				Assert.False(readWriteLock1.IsWriterLockHeld);
 				Assert.True(readWriteLock2.IsReaderLockHeld);
@@ -75,7 +79,7 @@ namespace TinyIpc.Tests
 		}
 
 		[Fact]
-		public void Calling_ReleaseLock_should_release_locks()
+		public void Calling_ReleaseReadLock_should_release_lock()
 		{
 			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
 			{
@@ -84,7 +88,14 @@ namespace TinyIpc.Tests
 
 				readWriteLock.ReleaseReadLock();
 				Assert.False(readWriteLock.IsReaderLockHeld);
+			}
+		}
 
+		[Fact]
+		public void Calling_ReleaseWriteLock_should_release_locks()
+		{
+			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 2))
+			{
 				readWriteLock.AcquireWriteLock();
 				Assert.True(readWriteLock.IsWriterLockHeld);
 
@@ -94,7 +105,7 @@ namespace TinyIpc.Tests
 		}
 
 		[Fact]
-		public void Calling_ReleaseLock_without_any_lock_held_should_throw()
+		public void Calling_ReleaseReadLock_without_any_lock_held_should_throw()
 		{
 			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
 			{
@@ -103,25 +114,37 @@ namespace TinyIpc.Tests
 		}
 
 		[Fact]
+		public void Calling_ReleaseWriteLock_without_any_lock_held_should_throw()
+		{
+			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
+			{
+				Assert.Throws<SemaphoreFullException>(() => readWriteLock.ReleaseWriteLock());
+			}
+		}
+
+		[Fact]
 		public void WriteLock_should_be_exclusive()
 		{
 			var lockId = Guid.NewGuid().ToString();
 
-			using (var readWriteLock1 = new TinyReadWriteLock(lockId, 2))
-			using (var readWriteLock2 = new TinyReadWriteLock(lockId, 2))
+			using (var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0)))
+			using (var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0)))
 			{
+				// Aquire the first lock
 				readWriteLock1.AcquireWriteLock();
 
-				Task.Run(() => readWriteLock2.AcquireWriteLock());
+				// The second lock should now throw TimeoutException
+				Assert.Throws<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
 
-				Thread.Sleep(10);
-
+				// Make sure the expected locks are held
 				Assert.True(readWriteLock1.IsWriterLockHeld);
 				Assert.False(readWriteLock2.IsWriterLockHeld);
 
+				// By releasing the first lock, the second lock should now be able to be held
 				readWriteLock1.ReleaseWriteLock();
-				Thread.Sleep(10);
+				readWriteLock2.AcquireWriteLock();
 
+				// Make sure the expected locks are held
 				Assert.False(readWriteLock1.IsWriterLockHeld);
 				Assert.True(readWriteLock2.IsWriterLockHeld);
 			}
@@ -134,23 +157,49 @@ namespace TinyIpc.Tests
 		public void ReadLock_should_allow_n_readers(int n)
 		{
 			var lockId = Guid.NewGuid().ToString();
-			var locks = Enumerable.Range(0, n+1).Select(x => new TinyReadWriteLock(lockId, n)).ToList();
 
-			locks.Take(n).ToList().ForEach(l => l.AcquireReadLock());
+			// Create more than n locks
+			var locks = Enumerable.Range(0, n+1).Select(x => new TinyReadWriteLock(lockId, n, TimeSpan.FromMilliseconds(0))).ToList();
 
-			Task.Run(() => locks.Last().AcquireReadLock());
-			Thread.Sleep(10);
+			try
+			{
+				// Aquire n locks
+				foreach (var rwLock in locks.Take(n))
+				{
+					rwLock.AcquireReadLock();
+				}
 
-			locks.Take(n).ToList().ForEach(l => Assert.True(l.IsReaderLockHeld));
-			Assert.False(locks.Last().IsReaderLockHeld);
+				// The first n locks should now be held
+				foreach (var rwLock in locks.Take(n))
+				{
+					Assert.True(rwLock.IsReaderLockHeld, "Expected lock to be held");
+				}
 
-			locks.First().ReleaseReadLock();
-			Thread.Sleep(10);
+				// Trying to aquire one more than n should throw TimeoutException
+				Assert.Throws<TimeoutException>(() => locks[n].AcquireReadLock());
 
-			Assert.False(locks.First().IsReaderLockHeld);
-			locks.Skip(1).ToList().ForEach(l => Assert.True(l.IsReaderLockHeld));
+				// Release any lock of the first locks
+				locks[0].ReleaseReadLock();
 
-			locks.ForEach(l => l.Dispose());
+				// The last lock should now be able to aquire the lock
+				locks[n].AcquireReadLock();
+				Assert.True(locks[n].IsReaderLockHeld, "Expected last lock to be held");
+			}
+			finally
+			{
+				foreach (var rwLock in locks)
+				{
+					rwLock.Dispose();
+				}
+			}
+		}
+
+		private static void WaitForTaskToStart(Task task)
+		{
+			while (task.Status != TaskStatus.Running)
+			{
+				Thread.Sleep(25);
+			}
 		}
 	}
 }
