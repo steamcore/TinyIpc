@@ -1,5 +1,7 @@
-﻿using System;
+using System;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using TinyIpc.IO;
 using TinyIpc.Messaging;
 using TinyIpc.Synchronization;
@@ -10,7 +12,7 @@ namespace TinyIpc.Tests
 	public class TinyMessageBusTests
 	{
 		[Fact]
-		public void Messages_sent_from_one_bus_should_be_received_by_the_other()
+		public async Task Messages_sent_from_one_bus_should_be_received_by_the_other()
 		{
 			using (var messagebus1 = new TinyMessageBus("Example"))
 			using (var messagebus2 = new TinyMessageBus("Example"))
@@ -19,11 +21,10 @@ namespace TinyIpc.Tests
 
 				messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString(e.Message);
 
-				messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
-				messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
-				messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
+				await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
+				await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
+				await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
 
-				messagebus1.ProcessIncomingMessages();
 				messagebus2.ProcessIncomingMessages();
 
 				Assert.Equal("yes", received);
@@ -31,8 +32,12 @@ namespace TinyIpc.Tests
 		}
 
 		[Fact]
-		public void All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario()
+		public async Task All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario()
 		{
+			var messagesPerRound = 32;
+			var firstRound = 16;
+			var secondRound = 16;
+			var total = firstRound + secondRound;
 			var rnd = new Random();
 
 			// Start up two chatty buses talking to each other
@@ -41,23 +46,21 @@ namespace TinyIpc.Tests
 			{
 				var buses = new[] { messagebus1, messagebus2 };
 
-				for (int i = 0; i < 512; i++)
+				for (int i = 0; i < firstRound; i++)
 				{
-					buses[rnd.Next() % buses.Length].PublishAsync(Guid.NewGuid().ToByteArray());
+					var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
+					await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 				}
-
-				// Wait for all messages published so far to be processed so the counters will be predictable
-				messagebus1.WaitAll();
-				messagebus2.WaitAll();
 
 				// Add a new bus to the mix
 				using (var messagebus3 = new TinyMessageBus("Example"))
 				{
 					buses = new[] { messagebus1, messagebus2, messagebus3 };
 
-					for (int i = 0; i < 512; i++)
+					for (int i = 0; i < secondRound; i++)
 					{
-						buses[rnd.Next() % buses.Length].PublishAsync(Guid.NewGuid().ToByteArray());
+						var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
+						await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 					}
 
 					// Force a final read of all messages to work around timing issuees
@@ -66,15 +69,15 @@ namespace TinyIpc.Tests
 					messagebus3.ProcessIncomingMessages();
 
 					// Counters should check out
-					Assert.Equal(1024 - messagebus1.MessagesSent, messagebus1.MessagesReceived);
-					Assert.Equal(1024 - messagebus2.MessagesSent, messagebus2.MessagesReceived);
-					Assert.Equal(512 - messagebus3.MessagesSent, messagebus3.MessagesReceived);
+					Assert.Equal(total * messagesPerRound - messagebus1.MessagesSent, messagebus1.MessagesReceived);
+					Assert.Equal(total * messagesPerRound - messagebus2.MessagesSent, messagebus2.MessagesReceived);
+					Assert.Equal(secondRound * messagesPerRound - messagebus3.MessagesSent, messagebus3.MessagesReceived);
 				}
 			}
 		}
 
 		[Fact]
-		public void All_primitives_should_be_configurable()
+		public async Task All_primitives_should_be_configurable()
 		{
 			var name = "Example";
 			var maxReaderCount = TinyReadWriteLock.DefaultMaxReaderCount;
@@ -92,8 +95,8 @@ namespace TinyIpc.Tests
 			var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
 			using (var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true))
 			{
-				messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
-				messageBus.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
+				await messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
+				await messageBus.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
 			}
 		}
 	}

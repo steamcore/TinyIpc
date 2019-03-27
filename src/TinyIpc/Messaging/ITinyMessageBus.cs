@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TinyIpc.Messaging
 {
@@ -9,7 +11,6 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		bool MessagesBeingProcessed { get; }
 		long MessagesSent { get; }
 		long MessagesReceived { get; }
 
@@ -19,9 +20,15 @@ namespace TinyIpc.Messaging
 		void ResetMetrics();
 
 		/// <summary>
-		/// Publishes a message to the message bus as soon as possible in a background task
+		/// Publish a message to the message bus
 		/// </summary>
 		/// <param name="message"></param>
-		void PublishAsync(byte[] message);
+		Task PublishAsync(byte[] message);
+
+		/// <summary>
+		/// Publish a number of messages to the message bus
+		/// </summary>
+		/// <param name="messages"></param>
+		Task PublishAsync(IEnumerable<byte[]> messages);
 	}
 }

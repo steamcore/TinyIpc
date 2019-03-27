@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,29 +16,21 @@ namespace TinyIpc.Messaging
 
 		private bool disposed;
 		private readonly Guid instanceId = Guid.NewGuid();
-		private readonly ConcurrentQueue<LogEntry> publishQueue = new ConcurrentQueue<LogEntry>();
 		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
-		private readonly object messagePublisherLock = new object();
-		private readonly object publishTaskLock = new object();
-		private readonly object readTaskLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool disposeFile;
 
 		private long lastEntryId = -1;
 		private long messagesSent;
 		private long messagesReceived;
-		private Task[] publishTasks = new Task[0];
-		private Task[] readTasks = new Task[0];
 		private int waitingReaders;
-		private int waitingPublishers;
 
 		/// <summary>
 		/// Called whenever a new message is received
 		/// </summary>
 		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		public bool MessagesBeingProcessed => waitingReaders + waitingPublishers > 0;
 		public long MessagesSent => messagesSent;
 		public long MessagesReceived => messagesReceived;
 
@@ -78,7 +69,8 @@ namespace TinyIpc.Messaging
 
 			memoryMappedFile.FileUpdated += HandleIncomingMessages;
 
-			Warmup();
+			var lastEntry = DeserializeLogBook(memoryMappedFile.Read()).Entries.LastOrDefault();
+			lastEntryId = lastEntry?.Id ?? -1;
 		}
 
 		public void Dispose()
@@ -87,27 +79,13 @@ namespace TinyIpc.Messaging
 
 			disposed = true;
 
-			WaitAll();
-
-			if (disposeFile && memoryMappedFile is TinyMemoryMappedFile)
+			lock (messageReaderLock)
 			{
-				(memoryMappedFile as TinyMemoryMappedFile).Dispose();
+				if (disposeFile && memoryMappedFile is TinyMemoryMappedFile)
+				{
+					(memoryMappedFile as TinyMemoryMappedFile).Dispose();
+				}
 			}
-		}
-
-		/// <summary>
-		/// Performs a synchonous warmup pass to make sure everything is jitted
-		/// </summary>
-		private void Warmup()
-		{
-			var lastEntry = DeserializeLogBook(memoryMappedFile.Read()).Entries.LastOrDefault();
-			if (lastEntry != null)
-			{
-				lastEntryId = lastEntry.Id;
-			}
-
-			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = new byte[0] });
-			ProcessPublishQueue();
 		}
 
 		/// <summary>
@@ -123,7 +101,7 @@ namespace TinyIpc.Messaging
 		/// Publishes a message to the message bus as soon as possible in a background task
 		/// </summary>
 		/// <param name="message"></param>
-		public void PublishAsync(byte[] message)
+		public Task PublishAsync(byte[] message)
 		{
 			if (disposed)
 				throw new ObjectDisposedException("Can not publish messages when diposed");
@@ -131,65 +109,33 @@ namespace TinyIpc.Messaging
 			if (message == null || message.Length == 0)
 				throw new ArgumentException("Message can not be empty", nameof(message));
 
-			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = message });
-
-			if (waitingPublishers > 0)
-				return;
-
-			StartPublishTask();
+			return PublishAsync(new[] { message });
 		}
 
-		internal void WaitAll()
-		{
-			Task.WaitAll(publishTasks);
-			Task.WaitAll(readTasks);
-		}
-
-		private void StartPublishTask()
+		/// <summary>
+		/// Publish a number of messages to the message bus
+		/// </summary>
+		/// <param name="messages"></param>
+		public Task PublishAsync(IEnumerable<byte[]> messages)
 		{
 			if (disposed)
-				return;
+				throw new ObjectDisposedException("Can not publish messages when diposed");
 
-			lock (publishTaskLock)
+			if (messages == null)
+				throw new ArgumentNullException("Message list can not be empty", nameof(messages));
+
+			return Task.Run(() =>
 			{
-				publishTasks = publishTasks.Where(x => !x.IsCompleted)
-					.Concat(new[] { Task.Run(() => ProcessPublishQueue()) })
-					.ToArray();
-			}
-		}
+				var publishQueue = new Queue<LogEntry>(messages.Select(message => new LogEntry { Instance = instanceId, Message = message }));
 
-		private void StartReadTask()
-		{
-			if (disposed)
-				return;
-
-			lock (readTaskLock)
-			{
-				readTasks = readTasks.Where(x => !x.IsCompleted)
-					.Concat(new[] { Task.Run(() => ProcessIncomingMessages()) })
-					.ToArray();
-			}
-		}
-
-		private void ProcessPublishQueue()
-		{
-			Interlocked.Increment(ref waitingPublishers);
-
-			lock (messagePublisherLock)
-			{
-				Interlocked.Decrement(ref waitingPublishers);
-
-				if (publishQueue.Count == 0)
-					return;
-
-				while (waitingPublishers == 0 && publishQueue.Count > 0)
+				while (publishQueue.Count > 0)
 				{
-					memoryMappedFile.ReadWrite(data => PublishMessages(data, TimeSpan.FromMilliseconds(100)));
+					memoryMappedFile.ReadWrite(data => PublishMessages(data, publishQueue, TimeSpan.FromMilliseconds(100)));
 				}
-			}
+			});
 		}
 
-		private byte[] PublishMessages(byte[] data, TimeSpan timeout)
+		private byte[] PublishMessages(byte[] data, Queue<LogEntry> publishQueue, TimeSpan timeout)
 		{
 			var logBook = DeserializeLogBook(data);
 			logBook.TrimStaleEntries(DateTime.UtcNow - minMessageAge);
@@ -203,13 +149,11 @@ namespace TinyIpc.Messaging
 			while (publishQueue.Count > 0 && slotTimer.Elapsed < timeout)
 			{
 				// Check if the next message will fit in the log
-				if (!publishQueue.TryPeek(out LogEntry entry) || logSize + messageOverhead + entry.Message.Length > memoryMappedFile.MaxFileSize)
-					break;
-
-				if (!publishQueue.TryDequeue(out entry))
+				if (logSize + messageOverhead + publishQueue.Peek().Message.Length > memoryMappedFile.MaxFileSize)
 					break;
 
 				// Write the entry to the log
+				var entry = publishQueue.Dequeue();
 				entry.Id = logBook.NextId++;
 				entry.Timestamp = batchTime;
 				logBook.Entries.Add(entry);
@@ -236,7 +180,7 @@ namespace TinyIpc.Messaging
 			if (waitingReaders > 0)
 				return;
 
-			StartReadTask();
+			ProcessIncomingMessages();
 		}
 
 		internal void ProcessIncomingMessages()
@@ -246,6 +190,9 @@ namespace TinyIpc.Messaging
 			lock (messageReaderLock)
 			{
 				Interlocked.Decrement(ref waitingReaders);
+
+				if (disposed)
+					return;
 
 				var logBook = DeserializeLogBook(memoryMappedFile.Read());
 
