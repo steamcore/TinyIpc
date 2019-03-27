@@ -13,10 +13,11 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
+		private static long messageOverhead;
+
 		private bool disposed;
-		private long messageOverhead;
 		private readonly Guid instanceId = Guid.NewGuid();
-		private readonly ConcurrentQueue<Entry> publishQueue = new ConcurrentQueue<Entry>();
+		private readonly ConcurrentQueue<LogEntry> publishQueue = new ConcurrentQueue<LogEntry>();
 		private readonly TimeSpan minMessageAge;
 		private readonly object messageReaderLock = new object();
 		private readonly object messagePublisherLock = new object();
@@ -25,7 +26,7 @@ namespace TinyIpc.Messaging
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
 		private readonly bool disposeFile;
 
-		private long lastEntryId;
+		private long lastEntryId = -1;
 		private long messagesSent;
 		private long messagesReceived;
 		private Task[] publishTasks = new Task[0];
@@ -43,6 +44,16 @@ namespace TinyIpc.Messaging
 		public long MessagesReceived => messagesReceived;
 
 		public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(500);
+
+		static TinyMessageBus()
+		{
+			Serializer.PrepareSerializer<LogBook>();
+			using (var memoryStream = new MemoryStream())
+			{
+				Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
+				messageOverhead = memoryStream.Length;
+			}
+		}
 
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name), true)
@@ -89,20 +100,13 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		private void Warmup()
 		{
-			Serializer.PrepareSerializer<Entry>();
-			using (var memoryStream = new MemoryStream())
-			{
-				Serializer.Serialize(memoryStream, new Entry { Id = long.MaxValue, Instance = instanceId, Timestamp = DateTime.UtcNow });
-				messageOverhead = memoryStream.Length;
-			}
-
-			var lastEntry = DeserializeLog(memoryMappedFile.Read()).LastOrDefault();
+			var lastEntry = DeserializeLogBook(memoryMappedFile.Read()).Entries.LastOrDefault();
 			if (lastEntry != null)
 			{
 				lastEntryId = lastEntry.Id;
 			}
 
-			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = new byte[0] });
+			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = new byte[0] });
 			ProcessPublishQueue();
 		}
 
@@ -127,7 +131,7 @@ namespace TinyIpc.Messaging
 			if (message == null || message.Length == 0)
 				throw new ArgumentException("Message can not be empty", nameof(message));
 
-			publishQueue.Enqueue(new Entry { Instance = instanceId, Message = message });
+			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = message });
 
 			if (waitingPublishers > 0)
 				return;
@@ -178,58 +182,52 @@ namespace TinyIpc.Messaging
 				if (publishQueue.Count == 0)
 					return;
 
-				memoryMappedFile.ReadWrite(
-					data =>
-					{
-						// Retreive the log but skip messages older than minimum message age
-						var cutoffPoint = DateTime.UtcNow - minMessageAge;
-						var log = DeserializeLog(data).SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
-						var logSize = log.Select(l => messageOverhead + l.Message.Length).Sum();
-						var lastEntry = log.LastOrDefault();
-						var nextId = Math.Max(lastEntryId, lastEntry?.Id ?? 0) + 1;
+				while (waitingPublishers == 0 && publishQueue.Count > 0)
+				{
+					memoryMappedFile.ReadWrite(data => PublishMessages(data, TimeSpan.FromMilliseconds(100)));
+				}
+			}
+		}
 
-						// Start slot timer after deserializing log so deserialization doesn't starve the slot time
-						var slotTimer = Stopwatch.StartNew();
-						var batchTime = DateTime.UtcNow;
+		private byte[] PublishMessages(byte[] data, TimeSpan timeout)
+		{
+			var logBook = DeserializeLogBook(data);
+			logBook.TrimStaleEntries(DateTime.UtcNow - minMessageAge);
+			var logSize = logBook.CalculateLogSize();
 
-						// Try to exhaust the publish queue but don't keep a write lock forever
-						while (publishQueue.Count > 0 && slotTimer.ElapsedMilliseconds < 25)
-						{
-							Entry entry;
+			// Start slot timer after deserializing log so deserialization doesn't starve the slot time
+			var slotTimer = Stopwatch.StartNew();
+			var batchTime = DateTime.UtcNow;
 
-							// Check if the next message will fit in the log
-							if (!publishQueue.TryPeek(out entry) || logSize + messageOverhead + entry.Message.Length > memoryMappedFile.MaxFileSize)
-								break;
+			// Try to exhaust the publish queue but don't keep a write lock forever
+			while (publishQueue.Count > 0 && slotTimer.Elapsed < timeout)
+			{
+				// Check if the next message will fit in the log
+				if (!publishQueue.TryPeek(out LogEntry entry) || logSize + messageOverhead + entry.Message.Length > memoryMappedFile.MaxFileSize)
+					break;
 
-							if (!publishQueue.TryDequeue(out entry))
-								break;
+				if (!publishQueue.TryDequeue(out entry))
+					break;
 
-							// Write the entry to the log even if the message is empty. Never leave the log empty.
-							entry.Id = nextId++;
-							entry.Timestamp = batchTime;
-							log.Add(entry);
-							logSize += messageOverhead + entry.Message.Length;
+				// Write the entry to the log
+				entry.Id = logBook.NextId++;
+				entry.Timestamp = batchTime;
+				logBook.Entries.Add(entry);
 
-							// Skip counting empty messages though, they are skipped on the receiving end anyway
-							if (entry.Message == null || entry.Message.Length == 0)
-								continue;
+				logSize += messageOverhead + entry.Message.Length;
 
-							Interlocked.Increment(ref messagesSent);
-						}
+				// Skip counting empty messages though, they are skipped on the receiving end anyway
+				if (entry.Message == null || entry.Message.Length == 0)
+					continue;
 
-						// Start a new publish task if there are messages left in the queue
-						if (waitingPublishers == 0 && publishQueue.Count > 0)
-						{
-							StartPublishTask();
-						}
+				Interlocked.Increment(ref messagesSent);
+			}
 
-						// Flush the updated log to the memory mapped file
-						using (var memoryStream = new MemoryStream((int)logSize))
-						{
-							Serializer.Serialize(memoryStream, log);
-							return memoryStream.ToArray();
-						}
-					});
+			// Flush the updated log to the memory mapped file
+			using (var memoryStream = new MemoryStream((int)logSize))
+			{
+				Serializer.Serialize(memoryStream, logBook);
+				return memoryStream.ToArray();
 			}
 		}
 
@@ -249,10 +247,13 @@ namespace TinyIpc.Messaging
 			{
 				Interlocked.Decrement(ref waitingReaders);
 
-				var data = memoryMappedFile.Read();
+				var logBook = DeserializeLogBook(memoryMappedFile.Read());
 
-				foreach (var entry in DeserializeLog(data).SkipWhile(entry => entry.Id <= lastEntryId))
+				foreach (var entry in logBook.Entries)
 				{
+					if (entry.Id <= lastEntryId)
+						continue;
+
 					lastEntryId = entry.Id;
 
 					if (entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
@@ -265,19 +266,39 @@ namespace TinyIpc.Messaging
 			}
 		}
 
-		private static IEnumerable<Entry> DeserializeLog(byte[] data)
+		private static LogBook DeserializeLogBook(byte[] data)
 		{
 			if (data.Length == 0)
-				return Enumerable.Empty<Entry>();
+				return new LogBook();
 
 			using (var memoryStream = new MemoryStream(data))
 			{
-				return Serializer.Deserialize<List<Entry>>(memoryStream);
+				return Serializer.Deserialize<LogBook>(memoryStream);
 			}
 		}
 
 		[ProtoContract]
-		private class Entry
+		private class LogBook
+		{
+			[ProtoMember(1)]
+			public long NextId { get; set; }
+
+			[ProtoMember(2)]
+			public List<LogEntry> Entries { get; set; } = new List<LogEntry>();
+
+			public long CalculateLogSize()
+			{
+				return sizeof(long) + Entries.Select(l => messageOverhead + l.Message.Length).Sum();
+			}
+
+			public void TrimStaleEntries(DateTime cutoffPoint)
+			{
+				Entries = Entries.SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
+			}
+		}
+
+		[ProtoContract]
+		private class LogEntry
 		{
 			[ProtoMember(1)]
 			public long Id { get; set; }
