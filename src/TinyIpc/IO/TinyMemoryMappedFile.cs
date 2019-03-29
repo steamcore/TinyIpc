@@ -74,7 +74,7 @@ namespace TinyIpc.IO
 
 			disposed = true;
 			waitHandle.Set();
-			fileWatcherTask.Wait();
+			fileWatcherTask.Wait(TinyReadWriteLock.DefaultWaitTimeout);
 
 			Dispose(true);
 			GC.SuppressFinalize(this);
@@ -177,7 +177,8 @@ namespace TinyIpc.IO
 		{
 			while (!disposed)
 			{
-				waitHandle.WaitOne();
+				if (!waitHandle.WaitOne(TinyReadWriteLock.DefaultWaitTimeout))
+					continue;
 
 				if (disposed)
 					return;
