@@ -16,8 +16,9 @@ namespace TinyIpc.IO
 		private readonly MemoryMappedFile memoryMappedFile;
 		private readonly ITinyReadWriteLock readWriteLock;
 		private readonly bool disposeLock;
-		private readonly EventWaitHandle waitHandle;
+		private readonly EventWaitHandle fileWaitHandle;
 
+		private readonly EventWaitHandle disposeWaitHandle;
 		private bool disposed;
 
 		public event EventHandler FileUpdated;
@@ -37,33 +38,20 @@ namespace TinyIpc.IO
 		}
 
 		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
+			: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock)
 		{
-			if (string.IsNullOrWhiteSpace(name))
-				throw new ArgumentException("File must be named", nameof(name));
-
-			if (maxFileSize <= 0)
-				throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
-
-			this.maxFileSize = maxFileSize;
-			this.readWriteLock = readWriteLock;
-			this.disposeLock = disposeLock;
-
-			memoryMappedFile = CreateOrOpenMemoryMappedFile(name, maxFileSize);
-			waitHandle = CreateEventWaitHandle(name);
-			fileWatcherTask = Task.Run(() => FileWatcher());
 		}
 
-		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle waitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
+		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 		{
-			if (maxFileSize <= 0)
-				throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
-
 			this.maxFileSize = maxFileSize;
 			this.readWriteLock = readWriteLock;
 			this.disposeLock = disposeLock;
-
 			this.memoryMappedFile = memoryMappedFile;
-			this.waitHandle = waitHandle;
+			this.fileWaitHandle = fileWaitHandle;
+
+			disposeWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+
 			fileWatcherTask = Task.Run(() => FileWatcher());
 		}
 
@@ -73,7 +61,7 @@ namespace TinyIpc.IO
 				return;
 
 			disposed = true;
-			waitHandle.Set();
+			disposeWaitHandle.Set();
 			fileWatcherTask.Wait(TinyReadWriteLock.DefaultWaitTimeout);
 
 			Dispose(true);
@@ -91,7 +79,8 @@ namespace TinyIpc.IO
 					(readWriteLock as TinyReadWriteLock).Dispose();
 				}
 
-				waitHandle.Dispose();
+				fileWaitHandle.Dispose();
+				disposeWaitHandle.Dispose();
 			}
 		}
 
@@ -151,7 +140,7 @@ namespace TinyIpc.IO
 			finally
 			{
 				readWriteLock.ReleaseWriteLock();
-				waitHandle.Set();
+				fileWaitHandle.Set();
 			}
 		}
 
@@ -169,24 +158,33 @@ namespace TinyIpc.IO
 			finally
 			{
 				readWriteLock.ReleaseWriteLock();
-				waitHandle.Set();
+				fileWaitHandle.Set();
 			}
 		}
 
 		private void FileWatcher()
 		{
+			var waitHandles = new[]
+			{
+				disposeWaitHandle,
+				fileWaitHandle
+			};
+
 			while (!disposed)
 			{
-				if (!waitHandle.WaitOne(TinyReadWriteLock.DefaultWaitTimeout))
-					continue;
+				fileWaitHandle.Reset();
 
-				if (disposed)
+				var result = WaitHandle.WaitAny(waitHandles, TinyReadWriteLock.DefaultWaitTimeout);
+
+				// Triggers when disposed
+				if (result == 0 || disposed)
 					return;
 
-				if (FileUpdated != null)
+				// Triggers when the file is changed
+				if (result == 1 && FileUpdated != null)
+				{
 					Task.Run(() => FileUpdated(this, EventArgs.Empty));
-
-				waitHandle.Reset();
+				}
 			}
 		}
 
@@ -215,11 +213,20 @@ namespace TinyIpc.IO
 
 		public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
 		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentException("File must be named", nameof(name));
+
+			if (maxFileSize <= 0)
+				throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
+
 			return MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
 		}
 
 		public static EventWaitHandle CreateEventWaitHandle(string name)
 		{
+			if (string.IsNullOrWhiteSpace(name))
+				throw new ArgumentException("EventWaitHandle must be named", nameof(name));
+
 			return new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
 		}
 	}
