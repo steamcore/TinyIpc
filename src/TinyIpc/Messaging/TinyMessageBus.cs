@@ -13,8 +13,6 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageBus : IDisposable, ITinyMessageBus
 	{
-		private static long messageOverhead;
-
 		private readonly bool disposeFile;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly TimeSpan minMessageAge;
@@ -47,11 +45,6 @@ namespace TinyIpc.Messaging
 		static TinyMessageBus()
 		{
 			Serializer.PrepareSerializer<LogBook>();
-			using (var memoryStream = new MemoryStream())
-			{
-				Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
-				messageOverhead = memoryStream.Length;
-			}
 		}
 
 		public TinyMessageBus(string name)
@@ -157,7 +150,7 @@ namespace TinyIpc.Messaging
 			while (publishQueue.Count > 0 && slotTimer.Elapsed < timeout)
 			{
 				// Check if the next message will fit in the log
-				if (logSize + messageOverhead + publishQueue.Peek().Message.Length > memoryMappedFile.MaxFileSize)
+				if (logSize + LogEntry.Overhead + publishQueue.Peek().Message.Length > memoryMappedFile.MaxFileSize)
 					break;
 
 				// Write the entry to the log
@@ -166,7 +159,7 @@ namespace TinyIpc.Messaging
 				entry.Timestamp = batchTime;
 				logBook.Entries.Add(entry);
 
-				logSize += messageOverhead + entry.Message.Length;
+				logSize += LogEntry.Overhead + entry.Message.Length;
 
 				// Skip counting empty messages though, they are skipped on the receiving end anyway
 				if (entry.Message == null || entry.Message.Length == 0)
@@ -281,7 +274,7 @@ namespace TinyIpc.Messaging
 
 			public long CalculateLogSize()
 			{
-				return sizeof(long) + Entries.Select(l => messageOverhead + l.Message.Length).Sum();
+				return sizeof(long) + Entries.Select(l => LogEntry.Overhead + l.Message.Length).Sum();
 			}
 
 			public void TrimStaleEntries(DateTime cutoffPoint)
@@ -293,6 +286,8 @@ namespace TinyIpc.Messaging
 		[ProtoContract]
 		private class LogEntry
 		{
+			public static long Overhead { get; }
+
 			[ProtoMember(1)]
 			public long Id { get; set; }
 
@@ -304,6 +299,15 @@ namespace TinyIpc.Messaging
 
 			[ProtoMember(4)]
 			public byte[] Message { get; set; }
+
+			static LogEntry()
+			{
+				using (var memoryStream = new MemoryStream())
+				{
+					Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
+					Overhead = memoryStream.Length;
+				}
+			}
 		}
 	}
 }

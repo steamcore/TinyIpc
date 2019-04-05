@@ -12,7 +12,6 @@ namespace TinyIpc.IO
 	public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	{
 		private readonly Task fileWatcherTask;
-		private readonly long maxFileSize;
 		private readonly MemoryMappedFile memoryMappedFile;
 		private readonly ITinyReadWriteLock readWriteLock;
 		private readonly bool disposeLock;
@@ -23,7 +22,7 @@ namespace TinyIpc.IO
 
 		public event EventHandler FileUpdated;
 
-		public long MaxFileSize => maxFileSize;
+		public long MaxFileSize { get; private set; }
 
 		public const int DefaultMaxFileSize = 1024 * 1024;
 
@@ -44,11 +43,12 @@ namespace TinyIpc.IO
 
 		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 		{
-			this.maxFileSize = maxFileSize;
 			this.readWriteLock = readWriteLock;
 			this.disposeLock = disposeLock;
 			this.memoryMappedFile = memoryMappedFile;
 			this.fileWaitHandle = fileWaitHandle;
+
+			MaxFileSize = maxFileSize;
 
 			disposeWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
 
@@ -128,7 +128,7 @@ namespace TinyIpc.IO
 		/// </summary>
 		public void Write(byte[] data)
 		{
-			if (data.Length > maxFileSize)
+			if (data.Length > MaxFileSize)
 				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
 			readWriteLock.AcquireWriteLock();
@@ -199,7 +199,7 @@ namespace TinyIpc.IO
 
 		private void InternalWrite(byte[] data)
 		{
-			if (data.Length > maxFileSize)
+			if (data.Length > MaxFileSize)
 				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
 			using (var accessor = memoryMappedFile.CreateViewAccessor())
