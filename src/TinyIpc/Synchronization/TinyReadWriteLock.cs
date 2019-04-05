@@ -56,8 +56,8 @@ namespace TinyIpc.Synchronization
 
 			this.maxReaderCount = maxReaderCount;
 			this.waitTimeout = waitTimeout;
-			this.mutex = mutex;
-			this.semaphore = semaphore;
+			this.mutex = mutex ?? throw new ArgumentNullException(nameof(mutex));
+			this.semaphore = semaphore ?? throw new ArgumentNullException(nameof(semaphore));
 		}
 
 		public void Dispose()

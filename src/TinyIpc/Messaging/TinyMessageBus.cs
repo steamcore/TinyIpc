@@ -64,9 +64,9 @@ namespace TinyIpc.Messaging
 
 		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, TimeSpan minMessageAge)
 		{
-			this.minMessageAge = minMessageAge;
-			this.memoryMappedFile = memoryMappedFile;
+			this.memoryMappedFile = memoryMappedFile ?? throw new ArgumentNullException(nameof(memoryMappedFile));
 			this.disposeFile = disposeFile;
+			this.minMessageAge = minMessageAge;
 
 			memoryMappedFile.FileUpdated += WhenFileUpdated;
 

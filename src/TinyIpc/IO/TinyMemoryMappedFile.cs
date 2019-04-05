@@ -43,10 +43,10 @@ namespace TinyIpc.IO
 
 		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 		{
-			this.readWriteLock = readWriteLock;
+			this.readWriteLock = readWriteLock ?? throw new ArgumentNullException(nameof(readWriteLock));
+			this.memoryMappedFile = memoryMappedFile ?? throw new ArgumentNullException(nameof(memoryMappedFile));
+			this.fileWaitHandle = fileWaitHandle ?? throw new ArgumentNullException(nameof(fileWaitHandle));
 			this.disposeLock = disposeLock;
-			this.memoryMappedFile = memoryMappedFile;
-			this.fileWaitHandle = fileWaitHandle;
 
 			MaxFileSize = maxFileSize;
 
