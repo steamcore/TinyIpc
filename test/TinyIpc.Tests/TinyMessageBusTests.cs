@@ -69,9 +69,9 @@ namespace TinyIpc.Tests
 					await messagebus3.ReadAsync();
 
 					// Counters should check out
-					Assert.Equal(total * messagesPerRound - messagebus1.MessagesSent, messagebus1.MessagesReceived);
-					Assert.Equal(total * messagesPerRound - messagebus2.MessagesSent, messagebus2.MessagesReceived);
-					Assert.Equal(secondRound * messagesPerRound - messagebus3.MessagesSent, messagebus3.MessagesReceived);
+					Assert.Equal(total * messagesPerRound - messagebus1.MessagesPublished, messagebus1.MessagesReceived);
+					Assert.Equal(total * messagesPerRound - messagebus2.MessagesPublished, messagebus2.MessagesReceived);
+					Assert.Equal(secondRound * messagesPerRound - messagebus3.MessagesPublished, messagebus3.MessagesReceived);
 				}
 			}
 		}

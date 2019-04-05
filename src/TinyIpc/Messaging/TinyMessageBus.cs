@@ -25,7 +25,7 @@ namespace TinyIpc.Messaging
 
 		private bool disposed;
 		private long lastEntryId = -1;
-		private long messagesSent;
+		private long messagesPublished;
 		private long messagesReceived;
 		private int waitingHandlers;
 		private int waitingReceivers;
@@ -37,7 +37,7 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		public long MessagesSent => messagesSent;
+		public long MessagesPublished => messagesPublished;
 		public long MessagesReceived => messagesReceived;
 
 		public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(500);
@@ -94,7 +94,7 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		public void ResetMetrics()
 		{
-			messagesSent = 0;
+			messagesPublished = 0;
 			messagesReceived = 0;
 		}
 
@@ -165,7 +165,7 @@ namespace TinyIpc.Messaging
 				if (entry.Message == null || entry.Message.Length == 0)
 					continue;
 
-				Interlocked.Increment(ref messagesSent);
+				Interlocked.Increment(ref messagesPublished);
 			}
 
 			// Flush the updated log to the memory mapped file
