@@ -96,8 +96,7 @@ namespace TinyIpc.Messaging
 
 			memoryMappedFile.FileUpdated += WhenFileUpdated;
 
-			var lastEntry = DeserializeLogBook(memoryMappedFile.Read()).Entries.LastOrDefault();
-			lastEntryId = lastEntry?.Id ?? -1;
+			lastEntryId = DeserializeLogBook(memoryMappedFile.Read()).LastId;
 		}
 
 		public void Dispose()
