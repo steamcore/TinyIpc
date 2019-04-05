@@ -141,6 +141,7 @@ namespace TinyIpc.IO
 			{
 				readWriteLock.ReleaseWriteLock();
 				fileWaitHandle.Set();
+				fileWaitHandle.Reset();
 			}
 		}
 
@@ -159,6 +160,7 @@ namespace TinyIpc.IO
 			{
 				readWriteLock.ReleaseWriteLock();
 				fileWaitHandle.Set();
+				fileWaitHandle.Reset();
 			}
 		}
 
@@ -172,8 +174,6 @@ namespace TinyIpc.IO
 
 			while (!disposed)
 			{
-				fileWaitHandle.Reset();
-
 				var result = WaitHandle.WaitAny(waitHandles, TinyReadWriteLock.DefaultWaitTimeout);
 
 				// Triggers when disposed
@@ -181,10 +181,8 @@ namespace TinyIpc.IO
 					return;
 
 				// Triggers when the file is changed
-				if (result == 1 && FileUpdated != null)
-				{
-					Task.Run(() => FileUpdated(this, EventArgs.Empty));
-				}
+				if (result == 1)
+					FileUpdated?.Invoke(this, EventArgs.Empty);
 			}
 		}
 
