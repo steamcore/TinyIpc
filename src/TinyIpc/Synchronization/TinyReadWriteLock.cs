@@ -21,7 +21,7 @@ namespace TinyIpc.Synchronization
 		public bool IsReaderLockHeld => readLocks > 0;
 		public bool IsWriterLockHeld => writeLock;
 
-		public const int DefaultMaxReaderCount = 3;
+		public const int DefaultMaxReaderCount = 6;
 		public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(5);
 
 		public TinyReadWriteLock(string name)
