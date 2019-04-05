@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -14,17 +15,24 @@ namespace TinyIpc.Messaging
 	{
 		private static long messageOverhead;
 
-		private bool disposed;
+		private readonly bool disposeFile;
 		private readonly Guid instanceId = Guid.NewGuid();
 		private readonly TimeSpan minMessageAge;
-		private readonly object messageReaderLock = new object();
 		private readonly ITinyMemoryMappedFile memoryMappedFile;
-		private readonly bool disposeFile;
+		private readonly ConcurrentQueue<LogEntry> receivedMessages = new ConcurrentQueue<LogEntry>();
 
+		private readonly object messageReaderLock = new object();
+		private readonly object handlerTaskLock = new object();
+		private readonly object handlerLock = new object();
+
+		private bool disposed;
 		private long lastEntryId = -1;
 		private long messagesSent;
 		private long messagesReceived;
-		private int waitingReaders;
+		private int waitingHandlers;
+		private int waitingReceivers;
+
+		private IReadOnlyList<Task> handlerTasks = new List<Task>();
 
 		/// <summary>
 		/// Called whenever a new message is received
@@ -67,7 +75,7 @@ namespace TinyIpc.Messaging
 			this.memoryMappedFile = memoryMappedFile;
 			this.disposeFile = disposeFile;
 
-			memoryMappedFile.FileUpdated += HandleIncomingMessages;
+			memoryMappedFile.FileUpdated += WhenFileUpdated;
 
 			var lastEntry = DeserializeLogBook(memoryMappedFile.Read()).Entries.LastOrDefault();
 			lastEntryId = lastEntry?.Id ?? -1;
@@ -75,7 +83,7 @@ namespace TinyIpc.Messaging
 
 		public void Dispose()
 		{
-			memoryMappedFile.FileUpdated -= HandleIncomingMessages;
+			memoryMappedFile.FileUpdated -= WhenFileUpdated;
 
 			disposed = true;
 
@@ -154,7 +162,7 @@ namespace TinyIpc.Messaging
 
 				// Write the entry to the log
 				var entry = publishQueue.Dequeue();
-				entry.Id = logBook.NextId++;
+				entry.Id = ++logBook.LastId;
 				entry.Timestamp = batchTime;
 				logBook.Entries.Add(entry);
 
@@ -175,38 +183,76 @@ namespace TinyIpc.Messaging
 			}
 		}
 
-		private void HandleIncomingMessages(object sender, EventArgs args)
+		internal Task ReadAsync()
 		{
-			if (waitingReaders > 0)
-				return;
+			ReceiveMessages();
+			HandleReceivedMessages();
 
-			ProcessIncomingMessages();
+			lock (handlerTaskLock)
+			{
+				return Task.WhenAll(handlerTasks.ToArray());
+			}
 		}
 
-		internal void ProcessIncomingMessages()
+		private void WhenFileUpdated(object sender, EventArgs args)
 		{
-			Interlocked.Increment(ref waitingReaders);
+			ReceiveMessages();
+			HandleReceivedMessages();
+		}
+
+		private void HandleReceivedMessages()
+		{
+			if (waitingHandlers > 0 || disposed)
+				return;
+
+			Interlocked.Increment(ref waitingHandlers);
+
+			lock (handlerTaskLock)
+			{
+				var handlerTask = Task.Run(() =>
+				{
+					lock (handlerLock)
+					{
+						Interlocked.Decrement(ref waitingHandlers);
+
+						while (receivedMessages.TryDequeue(out var entry))
+						{
+							MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
+						}
+					}
+				});
+
+				var runningTasks = handlerTasks.Where(x => x.Status == TaskStatus.Running).ToList();
+				runningTasks.Add(handlerTask);
+
+				handlerTasks = runningTasks;
+			}
+		}
+
+		private void ReceiveMessages()
+		{
+			if (waitingReceivers > 0 || disposed)
+				return;
+
+			Interlocked.Increment(ref waitingReceivers);
 
 			lock (messageReaderLock)
 			{
-				Interlocked.Decrement(ref waitingReaders);
+				Interlocked.Decrement(ref waitingReceivers);
 
 				if (disposed)
 					return;
 
 				var logBook = DeserializeLogBook(memoryMappedFile.Read());
+				var readFrom = lastEntryId;
+				lastEntryId = logBook.LastId;
 
 				foreach (var entry in logBook.Entries)
 				{
-					if (entry.Id <= lastEntryId)
+					if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
 						continue;
 
-					lastEntryId = entry.Id;
-
-					if (entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
-						continue;
-
-					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
+					receivedMessages.Enqueue(entry);
 
 					Interlocked.Increment(ref messagesReceived);
 				}
@@ -228,7 +274,7 @@ namespace TinyIpc.Messaging
 		private class LogBook
 		{
 			[ProtoMember(1)]
-			public long NextId { get; set; }
+			public long LastId { get; set; }
 
 			[ProtoMember(2)]
 			public List<LogEntry> Entries { get; set; } = new List<LogEntry>();

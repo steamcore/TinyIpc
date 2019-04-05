@@ -25,7 +25,7 @@ namespace TinyIpc.Tests
 				await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
 				await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
 
-				messagebus2.ProcessIncomingMessages();
+				await messagebus2.ReadAsync();
 
 				Assert.Equal("yes", received);
 			}
@@ -64,9 +64,9 @@ namespace TinyIpc.Tests
 					}
 
 					// Force a final read of all messages to work around timing issuees
-					messagebus1.ProcessIncomingMessages();
-					messagebus2.ProcessIncomingMessages();
-					messagebus3.ProcessIncomingMessages();
+					await messagebus1.ReadAsync();
+					await messagebus2.ReadAsync();
+					await messagebus3.ReadAsync();
 
 					// Counters should check out
 					Assert.Equal(total * messagesPerRound - messagebus1.MessagesSent, messagebus1.MessagesReceived);
