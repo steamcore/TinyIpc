@@ -299,12 +299,23 @@ namespace TinyIpc.Messaging
 
 			public long CalculateLogSize()
 			{
-				return sizeof(long) + Entries.Select(l => LogEntry.Overhead + l.Message.Length).Sum();
+				var size = (long)sizeof(long);
+				for (var i = 0; i < Entries.Count; i++)
+				{
+					size += LogEntry.Overhead + Entries[i].Message.Length;
+				}
+				return size;
 			}
 
 			public void TrimStaleEntries(DateTime cutoffPoint)
 			{
-				Entries = Entries.SkipWhile(entry => entry.Timestamp < cutoffPoint).ToList();
+				var i = 0;
+				for (; i < Entries.Count; i++)
+				{
+					if (Entries[i].Timestamp >= cutoffPoint)
+						break;
+				}
+				Entries.RemoveRange(0, i);
 			}
 		}
 
