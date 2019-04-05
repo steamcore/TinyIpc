@@ -12,11 +12,20 @@ Intended for quick broadcast messaging in desktop applications, it just works.
 * Clients may drop in and out at any time
 * Messages expire after a specified timeout, default 500 milliseconds
 * The log is kept small for performance, default max log size is 1 MB
-* Writes are queued until there is enough space in the log
+* Reads are queued and should be received in the same order as they were published
 
 ## Benefits and drawbacks ##
 
-It's easy to use and there is no complicated setup. It is suited for small messages, so big messages probably need some other transport mechanism. With high enough troughput messages may be lost if receivers are not able to get a read lock before the message timeout is reached. However, hundreds or even a few thousand small messages a second should be fine.
+It's easy to use and there is no complicated setup. It is suited for small messages,
+so big messages probably need some other transport mechanism. With high enough
+troughput messages may be lost if receivers are not able to get a read lock before
+the message timeout is reached.
+
+## Performance ##
+Every publish operation reads and writes the entire contents of a shared memory
+mapped file and every read operation which is triggered by writes also reads the
+entire file so if performance is important then batch publish several messages
+at once to reduce the amount of reads and writes.
 
 ## Compared to other solutions ##
 
@@ -79,7 +88,7 @@ using (var messagebus2 = new TinyMessageBus("ExampleChannel"))
 	while (true)
 	{
 		var message = Console.ReadLine();
-		messagebus1.PublishAsync(Encoding.UTF8.GetBytes(message));
+		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes(message));
 	}
 }
 ```
