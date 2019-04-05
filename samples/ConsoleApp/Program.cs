@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Text;
+using System.Threading.Tasks;
 using TinyIpc.Messaging;
 
 namespace ConsoleApp
 {
 	public class Program
 	{
-		public static void Main(string[] args)
+		public static async Task Main(string[] args)
 		{
 			using (var messagebus1 = new TinyMessageBus("Example"))
 			using (var messagebus2 = new TinyMessageBus("Example"))
@@ -23,7 +24,7 @@ namespace ConsoleApp
 					if (string.IsNullOrWhiteSpace(message))
 						return;
 
-					messagebus2.PublishAsync(Encoding.UTF8.GetBytes(message));
+					await messagebus2.PublishAsync(Encoding.UTF8.GetBytes(message));
 				}
 			}
 		}
