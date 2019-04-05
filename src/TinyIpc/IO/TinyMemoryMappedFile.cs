@@ -26,21 +26,45 @@ namespace TinyIpc.IO
 
 		public const int DefaultMaxFileSize = 1024 * 1024;
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMemoryMappedFile class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 		public TinyMemoryMappedFile(string name)
 			: this(name, DefaultMaxFileSize)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMemoryMappedFile class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 		public TinyMemoryMappedFile(string name, long maxFileSize)
 			: this(name, maxFileSize, new TinyReadWriteLock(name), true)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMemoryMappedFile class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
+		/// <param name="readWriteLock">A read/write lock that will be used to control access to the memory mapped file</param>
+		/// <param name="disposeLock">Set to true if the read/write lock is to be disposed when this instance is disposed</param>
 		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 			: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMemoryMappedFile class.
+		/// </summary>
+		/// <param name="memoryMappedFile">An instance of a memory mapped file</param>
+		/// <param name="fileWaitHandle">A manual reset EventWaitHandle that is to be used to signal file changes</param>
+		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
+		/// <param name="readWriteLock">A read/write lock that will be used to control access to the memory mapped file</param>
+		/// <param name="disposeLock">Set to true if the read/write lock is to be disposed when this instance is disposed</param>
 		public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 		{
 			this.readWriteLock = readWriteLock ?? throw new ArgumentNullException(nameof(readWriteLock));
@@ -209,6 +233,12 @@ namespace TinyIpc.IO
 			}
 		}
 
+		/// <summary>
+		/// Create or open a MemoryMappedFile that can be used to construct a TinyMemoryMappedFile
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
+		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
+		/// <returns>A system wide MemoryMappedFile</returns>
 		public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
 		{
 			if (string.IsNullOrWhiteSpace(name))
@@ -220,6 +250,11 @@ namespace TinyIpc.IO
 			return MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
 		}
 
+		/// <summary>
+		/// Create or open an EventWaitHandle that can be used to construct a TinyMemoryMappedFile
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
+		/// <returns>A system wide EventWaitHandle</returns>
 		public static EventWaitHandle CreateEventWaitHandle(string name)
 		{
 			if (string.IsNullOrWhiteSpace(name))

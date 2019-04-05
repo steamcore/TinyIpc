@@ -47,21 +47,47 @@ namespace TinyIpc.Messaging
 			Serializer.PrepareSerializer<LogBook>();
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMessageBus class.
+		/// </summary>
+		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name), true)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMessageBus class.
+		/// </summary>
+		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
+		/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
 		public TinyMessageBus(string name, TimeSpan minMessageAge)
 			: this(new TinyMemoryMappedFile(name), true, minMessageAge)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMessageBus class.
+		/// </summary>
+		/// <param name="memoryMappedFile">
+		/// An instance of a ITinyMemoryMappedFile that will be used to transmit messages.
+		/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per half second.
+		/// </param>
+		/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
 		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile)
 			: this(memoryMappedFile, disposeFile, DefaultMinMessageAge)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyMessageBus class.
+		/// </summary>
+		/// <param name="memoryMappedFile">
+		/// An instance of a ITinyMemoryMappedFile that will be used to transmit messages.
+		/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per minMessageAge.
+		/// </param>
+		/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
+		/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
 		public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, TimeSpan minMessageAge)
 		{
 			this.memoryMappedFile = memoryMappedFile ?? throw new ArgumentNullException(nameof(memoryMappedFile));

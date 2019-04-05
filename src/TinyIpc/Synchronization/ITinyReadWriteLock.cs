@@ -1,8 +1,15 @@
-﻿namespace TinyIpc.Synchronization
+namespace TinyIpc.Synchronization
 {
 	public interface ITinyReadWriteLock
 	{
+		/// <summary>
+		/// Is true if at least one read lock is being held
+		/// </summary>
 		bool IsReaderLockHeld { get; }
+
+		/// <summary>
+		/// Is true if a write lock (which means all read locks) is being held
+		/// </summary>
 		bool IsWriterLockHeld { get; }
 
 		/// <summary>

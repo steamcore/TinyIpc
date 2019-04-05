@@ -11,8 +11,14 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
 
-		long MessagesSent { get; }
+		/// <summary>
+		/// Number of messages that have been published by this message bus
+		/// </summary>
 		long MessagesPublished { get; }
+
+		/// <summary>
+		/// Number of messages that have been received by this message bus
+		/// </summary>
 		long MessagesReceived { get; }
 
 		/// <summary>

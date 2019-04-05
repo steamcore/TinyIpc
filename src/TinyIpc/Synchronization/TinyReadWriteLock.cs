@@ -24,16 +24,31 @@ namespace TinyIpc.Synchronization
 		public const int DefaultMaxReaderCount = 6;
 		public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(5);
 
+		/// <summary>
+		/// Initializes a new instance of the TinyReadWriteLock class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 		public TinyReadWriteLock(string name)
 			: this(name, DefaultMaxReaderCount, DefaultWaitTimeout)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyReadWriteLock class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+		/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
 		public TinyReadWriteLock(string name, int maxReaderCount)
 			: this(name, maxReaderCount, DefaultWaitTimeout)
 		{
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyReadWriteLock class.
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+		/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
+		/// <param name="waitTimeout">How long to wait before giving up aquiring read and write locks</param>
 		public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout)
 		{
 			if (string.IsNullOrWhiteSpace(name))
@@ -49,6 +64,13 @@ namespace TinyIpc.Synchronization
 			semaphore = CreateSemaphore(name, maxReaderCount);
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the TinyReadWriteLock class.
+		/// </summary>
+		/// <param name="mutex">Should be a system wide Mutex that is used to control access to the semaphore</param>
+		/// <param name="semaphore">Should be a system wide Semaphore with at least one max count, default is 6</param>
+		/// <param name="maxReaderCount">Maxium simultaneous readers, must be the same as the Semaphore count, default is 6</param>
+		/// <param name="waitTimeout">How long to wait before giving up aquiring read and write locks</param>
 		public TinyReadWriteLock(Mutex mutex, Semaphore semaphore, int maxReaderCount, TimeSpan waitTimeout)
 		{
 			if (maxReaderCount <= 0)
@@ -152,11 +174,22 @@ namespace TinyIpc.Synchronization
 			semaphore.Release(maxReaderCount);
 		}
 
+		/// <summary>
+		/// Create a system wide Mutex that can be used to construct a TinyReadWriteLock
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
+		/// <returns>A system wide Mutex</returns>
 		public static Mutex CreateMutex(string name)
 		{
 			return new Mutex(false, "TinyReadWriteLock_Mutex_" + name);
 		}
 
+		/// <summary>
+		/// Create a system wide Semaphore that can be used to construct a TinyReadWriteLock
+		/// </summary>
+		/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
+		/// <param name="maxReaderCount">Maximum number of simultaneous readers</param>
+		/// <returns>A system wide Semaphore</returns>
 		public static Semaphore CreateSemaphore(string name, int maxReaderCount)
 		{
 			return new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
