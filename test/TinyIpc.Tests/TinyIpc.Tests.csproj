@@ -4,6 +4,7 @@
     <Description>TinyIpc tests</Description>
     <Authors>Steamcore</Authors>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
     <AssemblyName>TinyIpc.Tests</AssemblyName>
     <PackageId>TinyIpc.Tests</PackageId>
   </PropertyGroup>

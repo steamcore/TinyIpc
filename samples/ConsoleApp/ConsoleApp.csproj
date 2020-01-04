@@ -4,6 +4,7 @@
     <Description>TinyIpc console example</Description>
     <Authors>Steamcore</Authors>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
     <AssemblyName>ConsoleApp</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>ConsoleApp</PackageId>
