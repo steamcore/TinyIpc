@@ -20,7 +20,7 @@ namespace TinyIpc.IO
 		private readonly EventWaitHandle disposeWaitHandle;
 		private bool disposed;
 
-		public event EventHandler FileUpdated;
+		public event EventHandler? FileUpdated;
 
 		public long MaxFileSize { get; private set; }
 
@@ -98,9 +98,9 @@ namespace TinyIpc.IO
 			{
 				memoryMappedFile.Dispose();
 
-				if (disposeLock && readWriteLock is TinyReadWriteLock)
+				if (disposeLock && readWriteLock is TinyReadWriteLock tinyReadWriteLock)
 				{
-					(readWriteLock as TinyReadWriteLock).Dispose();
+					tinyReadWriteLock.Dispose();
 				}
 
 				fileWaitHandle.Dispose();

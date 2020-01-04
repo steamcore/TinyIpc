@@ -7,7 +7,7 @@ namespace TinyIpc.IO
 		/// <summary>
 		/// Called whenever the file is written to
 		/// </summary>
-		event EventHandler FileUpdated;
+		event EventHandler? FileUpdated;
 
 		/// <summary>
 		/// The maximum amount of data that can be written to the file

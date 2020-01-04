@@ -9,7 +9,7 @@ namespace TinyIpc.Messaging
 		/// <summary>
 		/// Called whenever a new message is received
 		/// </summary>
-		event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
+		event EventHandler<TinyMessageReceivedEventArgs>? MessageReceived;
 
 		/// <summary>
 		/// Number of messages that have been published by this message bus

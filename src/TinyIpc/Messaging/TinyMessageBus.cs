@@ -35,7 +35,7 @@ namespace TinyIpc.Messaging
 		/// <summary>
 		/// Called whenever a new message is received
 		/// </summary>
-		public event EventHandler<TinyMessageReceivedEventArgs> MessageReceived;
+		public event EventHandler<TinyMessageReceivedEventArgs>? MessageReceived;
 
 		public long MessagesPublished => messagesPublished;
 		public long MessagesReceived => messagesReceived;
@@ -107,9 +107,9 @@ namespace TinyIpc.Messaging
 
 			lock (messageReaderLock)
 			{
-				if (disposeFile && memoryMappedFile is TinyMemoryMappedFile)
+				if (disposeFile && memoryMappedFile is TinyMemoryMappedFile tinyMemoryMappedFile)
 				{
-					(memoryMappedFile as TinyMemoryMappedFile).Dispose();
+					tinyMemoryMappedFile.Dispose();
 				}
 			}
 		}
@@ -187,7 +187,7 @@ namespace TinyIpc.Messaging
 				logSize += LogEntry.Overhead + entry.Message.Length;
 
 				// Skip counting empty messages though, they are skipped on the receiving end anyway
-				if (entry.Message == null || entry.Message.Length == 0)
+				if (entry.Message.Length == 0)
 					continue;
 
 				Interlocked.Increment(ref messagesPublished);
@@ -210,7 +210,7 @@ namespace TinyIpc.Messaging
 			}
 		}
 
-		private void WhenFileUpdated(object sender, EventArgs args)
+		private void WhenFileUpdated(object? sender, EventArgs args)
 		{
 			ReceiveMessages();
 			HandleReceivedMessages();
@@ -233,7 +233,7 @@ namespace TinyIpc.Messaging
 
 						while (receivedMessages.TryDequeue(out var entry))
 						{
-							MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs { Message = entry.Message });
+							MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(entry.Message));
 						}
 					}
 				});
@@ -265,7 +265,7 @@ namespace TinyIpc.Messaging
 
 				foreach (var entry in logBook.Entries)
 				{
-					if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message == null || entry.Message.Length == 0)
+					if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
 						continue;
 
 					receivedMessages.Enqueue(entry);
@@ -318,6 +318,8 @@ namespace TinyIpc.Messaging
 		[ProtoContract]
 		private class LogEntry
 		{
+			private static readonly byte[] emptyMessage = new byte[0];
+
 			public static long Overhead { get; }
 
 			[ProtoMember(1)]
@@ -330,7 +332,7 @@ namespace TinyIpc.Messaging
 			public DateTime Timestamp { get; set; }
 
 			[ProtoMember(4)]
-			public byte[] Message { get; set; }
+			public byte[] Message { get; set; } = emptyMessage;
 
 			static LogEntry()
 			{

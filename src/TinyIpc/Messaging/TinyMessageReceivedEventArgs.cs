@@ -4,6 +4,11 @@ namespace TinyIpc.Messaging
 {
 	public class TinyMessageReceivedEventArgs : EventArgs
 	{
-		public byte[] Message { get; set; }
+		public byte[] Message { get; }
+
+		public TinyMessageReceivedEventArgs(byte[] message)
+		{
+			Message = message;
+		}
 	}
 }
