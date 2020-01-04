@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>TinyIpc tests</Description>
     <Authors>Steamcore</Authors>
-    <TargetFrameworks>netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <AssemblyName>TinyIpc.Tests</AssemblyName>
     <PackageId>TinyIpc.Tests</PackageId>
   </PropertyGroup>
