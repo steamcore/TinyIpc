@@ -194,11 +194,9 @@ namespace TinyIpc.Messaging
 			}
 
 			// Flush the updated log to the memory mapped file
-			using (var memoryStream = new MemoryStream((int)logSize))
-			{
-				Serializer.Serialize(memoryStream, logBook);
-				return memoryStream.ToArray();
-			}
+			using var memoryStream = new MemoryStream((int)logSize);
+			Serializer.Serialize(memoryStream, logBook);
+			return memoryStream.ToArray();
 		}
 
 		internal Task ReadAsync()
@@ -282,10 +280,8 @@ namespace TinyIpc.Messaging
 			if (data.Length == 0)
 				return new LogBook();
 
-			using (var memoryStream = new MemoryStream(data))
-			{
-				return Serializer.Deserialize<LogBook>(memoryStream);
-			}
+			using var memoryStream = new MemoryStream(data);
+			return Serializer.Deserialize<LogBook>(memoryStream);
 		}
 
 		[ProtoContract]
@@ -338,11 +334,9 @@ namespace TinyIpc.Messaging
 
 			static LogEntry()
 			{
-				using (var memoryStream = new MemoryStream())
-				{
-					Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
-					Overhead = memoryStream.Length;
-				}
+				using var memoryStream = new MemoryStream();
+				Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
+				Overhead = memoryStream.Length;
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TinyIpc.IO;
 using System.Text;
 using Xunit;
@@ -30,23 +30,21 @@ namespace TinyIpc.Tests
 		[InlineData("lorem ipsum dolor sit amet")]
 		public void Write_then_read_returns_what_was_written(string message)
 		{
-			using (var file = new TinyMemoryMappedFile("Test"))
-			{
-				var data = Encoding.UTF8.GetBytes(message);
+			using var file = new TinyMemoryMappedFile("Test");
 
-				file.Write(data);
+			var data = Encoding.UTF8.GetBytes(message);
 
-				Assert.Equal(data, file.Read());
-			}
+			file.Write(data);
+
+			Assert.Equal(data, file.Read());
 		}
 
 		[Fact]
 		public void Write_with_more_data_than_size_limit_throws()
 		{
-			using (var file = new TinyMemoryMappedFile("Test", 4))
-			{
-				Assert.Throws<ArgumentOutOfRangeException>(() => file.Write(new byte[] { 1, 2, 3, 4, 5 }));
-			}
+			using var file = new TinyMemoryMappedFile("Test", 4);
+
+			Assert.Throws<ArgumentOutOfRangeException>(() => file.Write(new byte[] { 1, 2, 3, 4, 5 }));
 		}
 
 		[Theory]
@@ -55,14 +53,13 @@ namespace TinyIpc.Tests
 		[InlineData("lorem ipsum dolor sit amet")]
 		public void GetFileSize_returns_expected_size(string message)
 		{
-			using (var file = new TinyMemoryMappedFile("Test"))
-			{
-				var data = Encoding.UTF8.GetBytes(message);
+			using var file = new TinyMemoryMappedFile("Test");
 
-				file.Write(data);
+			var data = Encoding.UTF8.GetBytes(message);
 
-				Assert.Equal(message.Length, file.GetFileSize());
-			}
+			file.Write(data);
+
+			Assert.Equal(message.Length, file.GetFileSize());
 		}
 
 		[Fact]

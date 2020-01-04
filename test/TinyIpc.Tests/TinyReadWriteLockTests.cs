@@ -31,25 +31,24 @@ namespace TinyIpc.Tests
 		{
 			var lockId = Guid.NewGuid().ToString();
 
-			using (var readWriteLock1 = new TinyReadWriteLock(lockId, 2))
-			using (var readWriteLock2 = new TinyReadWriteLock(lockId, 2))
-			{
-				readWriteLock1.AcquireReadLock();
+			using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
+			using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-				var writeLockTask = Task.Run(() => readWriteLock2.AcquireWriteLock());
+			readWriteLock1.AcquireReadLock();
 
-				WaitForTaskToStart(writeLockTask);
+			var writeLockTask = Task.Run(() => readWriteLock2.AcquireWriteLock());
 
-				Assert.True(readWriteLock1.IsReaderLockHeld);
-				Assert.False(readWriteLock2.IsWriterLockHeld);
+			WaitForTaskToStart(writeLockTask);
 
-				readWriteLock1.ReleaseReadLock();
+			Assert.True(readWriteLock1.IsReaderLockHeld);
+			Assert.False(readWriteLock2.IsWriterLockHeld);
 
-				writeLockTask.Wait();
+			readWriteLock1.ReleaseReadLock();
 
-				Assert.False(readWriteLock1.IsReaderLockHeld);
-				Assert.True(readWriteLock2.IsWriterLockHeld);
-			}
+			writeLockTask.Wait();
+
+			Assert.False(readWriteLock1.IsReaderLockHeld);
+			Assert.True(readWriteLock2.IsWriterLockHeld);
 		}
 
 		[Fact]
@@ -57,69 +56,64 @@ namespace TinyIpc.Tests
 		{
 			var lockId = Guid.NewGuid().ToString();
 
-			using (var readWriteLock1 = new TinyReadWriteLock(lockId, 2))
-			using (var readWriteLock2 = new TinyReadWriteLock(lockId, 2))
-			{
-				readWriteLock1.AcquireWriteLock();
+			using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
+			using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-				var readLockTask = Task.Run(() => readWriteLock2.AcquireReadLock());
+			readWriteLock1.AcquireWriteLock();
 
-				WaitForTaskToStart(readLockTask);
+			var readLockTask = Task.Run(() => readWriteLock2.AcquireReadLock());
 
-				Assert.True(readWriteLock1.IsWriterLockHeld);
-				Assert.False(readWriteLock2.IsReaderLockHeld);
+			WaitForTaskToStart(readLockTask);
 
-				readWriteLock1.ReleaseWriteLock();
+			Assert.True(readWriteLock1.IsWriterLockHeld);
+			Assert.False(readWriteLock2.IsReaderLockHeld);
 
-				readLockTask.Wait();
+			readWriteLock1.ReleaseWriteLock();
 
-				Assert.False(readWriteLock1.IsWriterLockHeld);
-				Assert.True(readWriteLock2.IsReaderLockHeld);
-			}
+			readLockTask.Wait();
+
+			Assert.False(readWriteLock1.IsWriterLockHeld);
+			Assert.True(readWriteLock2.IsReaderLockHeld);
 		}
 
 		[Fact]
 		public void Calling_ReleaseReadLock_should_release_lock()
 		{
-			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
-			{
-				readWriteLock.AcquireReadLock();
-				Assert.True(readWriteLock.IsReaderLockHeld);
+			using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
 
-				readWriteLock.ReleaseReadLock();
-				Assert.False(readWriteLock.IsReaderLockHeld);
-			}
+			readWriteLock.AcquireReadLock();
+			Assert.True(readWriteLock.IsReaderLockHeld);
+
+			readWriteLock.ReleaseReadLock();
+			Assert.False(readWriteLock.IsReaderLockHeld);
 		}
 
 		[Fact]
 		public void Calling_ReleaseWriteLock_should_release_locks()
 		{
-			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 2))
-			{
-				readWriteLock.AcquireWriteLock();
-				Assert.True(readWriteLock.IsWriterLockHeld);
+			using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 2);
 
-				readWriteLock.ReleaseWriteLock();
-				Assert.False(readWriteLock.IsWriterLockHeld);
-			}
+			readWriteLock.AcquireWriteLock();
+			Assert.True(readWriteLock.IsWriterLockHeld);
+
+			readWriteLock.ReleaseWriteLock();
+			Assert.False(readWriteLock.IsWriterLockHeld);
 		}
 
 		[Fact]
 		public void Calling_ReleaseReadLock_without_any_lock_held_should_throw()
 		{
-			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
-			{
-				Assert.Throws<SemaphoreFullException>(() => readWriteLock.ReleaseReadLock());
-			}
+			using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
+
+			Assert.Throws<SemaphoreFullException>(() => readWriteLock.ReleaseReadLock());
 		}
 
 		[Fact]
 		public void Calling_ReleaseWriteLock_without_any_lock_held_should_throw()
 		{
-			using (var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1))
-			{
-				Assert.Throws<SemaphoreFullException>(() => readWriteLock.ReleaseWriteLock());
-			}
+			using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
+
+			Assert.Throws<SemaphoreFullException>(() => readWriteLock.ReleaseWriteLock());
 		}
 
 		[Fact]
@@ -127,27 +121,26 @@ namespace TinyIpc.Tests
 		{
 			var lockId = Guid.NewGuid().ToString();
 
-			using (var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0)))
-			using (var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0)))
-			{
-				// Aquire the first lock
-				readWriteLock1.AcquireWriteLock();
+			using var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0));
+			using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0));
 
-				// The second lock should now throw TimeoutException
-				Assert.Throws<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
+			// Aquire the first lock
+			readWriteLock1.AcquireWriteLock();
 
-				// Make sure the expected locks are held
-				Assert.True(readWriteLock1.IsWriterLockHeld);
-				Assert.False(readWriteLock2.IsWriterLockHeld);
+			// The second lock should now throw TimeoutException
+			Assert.Throws<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
 
-				// By releasing the first lock, the second lock should now be able to be held
-				readWriteLock1.ReleaseWriteLock();
-				readWriteLock2.AcquireWriteLock();
+			// Make sure the expected locks are held
+			Assert.True(readWriteLock1.IsWriterLockHeld);
+			Assert.False(readWriteLock2.IsWriterLockHeld);
 
-				// Make sure the expected locks are held
-				Assert.False(readWriteLock1.IsWriterLockHeld);
-				Assert.True(readWriteLock2.IsWriterLockHeld);
-			}
+			// By releasing the first lock, the second lock should now be able to be held
+			readWriteLock1.ReleaseWriteLock();
+			readWriteLock2.AcquireWriteLock();
+
+			// Make sure the expected locks are held
+			Assert.False(readWriteLock1.IsWriterLockHeld);
+			Assert.True(readWriteLock2.IsWriterLockHeld);
 		}
 
 		[Theory]

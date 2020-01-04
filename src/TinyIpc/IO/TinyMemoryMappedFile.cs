@@ -118,10 +118,8 @@ namespace TinyIpc.IO
 
 			try
 			{
-				using (var accessor = memoryMappedFile.CreateViewAccessor())
-				{
-					return accessor.ReadInt32(0);
-				}
+				using var accessor = memoryMappedFile.CreateViewAccessor();
+				return accessor.ReadInt32(0);
 			}
 			finally
 			{
@@ -212,13 +210,11 @@ namespace TinyIpc.IO
 
 		private byte[] InternalRead()
 		{
-			using (var accessor = memoryMappedFile.CreateViewAccessor())
-			{
-				var length = accessor.ReadInt32(0);
-				var data = new byte[length];
-				accessor.ReadArray(sizeof(int), data, 0, length);
-				return data;
-			}
+			using var accessor = memoryMappedFile.CreateViewAccessor();
+			var length = accessor.ReadInt32(0);
+			var data = new byte[length];
+			accessor.ReadArray(sizeof(int), data, 0, length);
+			return data;
 		}
 
 		private void InternalWrite(byte[] data)
@@ -226,11 +222,9 @@ namespace TinyIpc.IO
 			if (data.Length > MaxFileSize)
 				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
-			using (var accessor = memoryMappedFile.CreateViewAccessor())
-			{
-				accessor.Write(0, data.Length);
-				accessor.WriteArray(sizeof(int), data, 0, data.Length);
-			}
+			using var accessor = memoryMappedFile.CreateViewAccessor();
+			accessor.Write(0, data.Length);
+			accessor.WriteArray(sizeof(int), data, 0, data.Length);
 		}
 
 		/// <summary>
