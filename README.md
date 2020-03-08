@@ -4,7 +4,7 @@
 
 .NET inter process broadcast message bus.
 
-Intended for quick broadcast messaging in desktop applications, it just works.
+Intended for quick broadcast messaging in Windows desktop applications, it just works.
 
 ## Quick introduction ##
 
@@ -27,7 +27,17 @@ mapped file and every read operation which is triggered by writes also reads the
 entire file so if performance is important then batch publish several messages
 at once to reduce the amount of reads and writes.
 
+## OS Support ##
+
+Unfortunately TinyIpc only works on Windows because the named primitives that
+are core to this entire solution only works on Windows and throws
+PlatformNotSupportedException on other operating systems by design.
+
+See https://github.com/dotnet/runtime/issues/4370 for more information.
+
 ## Compared to other solutions ##
+
+*This comparison was made in 2014.*
 
 <table>
 	<tr>
