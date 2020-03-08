@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Shouldly;
 using TinyIpc.IO;
 using TinyIpc.Messaging;
 using TinyIpc.Synchronization;
@@ -27,7 +28,7 @@ namespace TinyIpc.Tests
 
 			await messagebus2.ReadAsync();
 
-			Assert.Equal("yes", received);
+			received.ShouldBe("yes");
 		}
 
 		[Fact]
@@ -68,9 +69,9 @@ namespace TinyIpc.Tests
 			await messagebus3.ReadAsync();
 
 			// Counters should check out
-			Assert.Equal(total * messagesPerRound - messagebus1.MessagesPublished, messagebus1.MessagesReceived);
-			Assert.Equal(total * messagesPerRound - messagebus2.MessagesPublished, messagebus2.MessagesReceived);
-			Assert.Equal(secondRound * messagesPerRound - messagebus3.MessagesPublished, messagebus3.MessagesReceived);
+			messagebus1.MessagesReceived.ShouldBe(total * messagesPerRound - messagebus1.MessagesPublished);
+			messagebus2.MessagesReceived.ShouldBe(total * messagesPerRound - messagebus2.MessagesPublished);
+			messagebus3.MessagesReceived.ShouldBe(secondRound * messagesPerRound - messagebus3.MessagesPublished);
 		}
 
 		[Fact]
