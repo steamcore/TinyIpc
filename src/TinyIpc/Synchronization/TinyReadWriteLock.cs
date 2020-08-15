@@ -82,13 +82,24 @@ namespace TinyIpc.Synchronization
 			this.semaphore = semaphore ?? throw new ArgumentNullException(nameof(semaphore));
 		}
 
+		~TinyReadWriteLock()
+		{
+			Dispose(false);
+		}
+
 		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
 		{
 			if (disposed)
 				return;
 
-			disposed = true;
-
+			// Always release held semaphore locks even when triggered by the finalizer
+			// or they will remain held indefinitely.
 			if (readLocks > 0)
 			{
 				semaphore.Release(readLocks);
@@ -100,8 +111,14 @@ namespace TinyIpc.Synchronization
 
 			readLocks = 0;
 			writeLock = false;
-			mutex.Dispose();
-			semaphore.Dispose();
+
+			if (disposing)
+			{
+				mutex.Dispose();
+				semaphore.Dispose();
+			}
+
+			disposed = true;
 		}
 
 		/// <summary>

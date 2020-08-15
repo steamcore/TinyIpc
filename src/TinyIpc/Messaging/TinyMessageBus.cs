@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -47,12 +48,14 @@ namespace TinyIpc.Messaging
 			Serializer.PrepareSerializer<LogBook>();
 		}
 
+
 		/// <summary>
 		/// Initializes a new instance of the TinyMessageBus class.
 		/// </summary>
 		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
+		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
 		public TinyMessageBus(string name)
-			: this(new TinyMemoryMappedFile(name), true)
+			: this(new TinyMemoryMappedFile(name), disposeFile: true)
 		{
 		}
 
@@ -61,8 +64,9 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 		/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
+		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
 		public TinyMessageBus(string name, TimeSpan minMessageAge)
-			: this(new TinyMemoryMappedFile(name), true, minMessageAge)
+			: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge)
 		{
 		}
 
@@ -101,15 +105,27 @@ namespace TinyIpc.Messaging
 
 		public void Dispose()
 		{
-			memoryMappedFile.FileUpdated -= WhenFileUpdated;
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
 
-			disposed = true;
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposed)
+				return;
 
-			lock (messageReaderLock)
+			if (disposing)
 			{
-				if (disposeFile && memoryMappedFile is TinyMemoryMappedFile tinyMemoryMappedFile)
+				memoryMappedFile.FileUpdated -= WhenFileUpdated;
+
+				disposed = true;
+
+				lock (messageReaderLock)
 				{
-					tinyMemoryMappedFile.Dispose();
+					if (disposeFile && memoryMappedFile is IDisposable disposableFile)
+					{
+						disposableFile.Dispose();
+					}
 				}
 			}
 		}
@@ -132,7 +148,7 @@ namespace TinyIpc.Messaging
 			if (disposed)
 				throw new ObjectDisposedException("Can not publish messages when diposed");
 
-			if (message == null || message.Length == 0)
+			if (message is null || message.Length == 0)
 				throw new ArgumentException("Message can not be empty", nameof(message));
 
 			return PublishAsync(new[] { message });
@@ -147,8 +163,8 @@ namespace TinyIpc.Messaging
 			if (disposed)
 				throw new ObjectDisposedException("Can not publish messages when diposed");
 
-			if (messages == null)
-				throw new ArgumentNullException("Message list can not be empty", nameof(messages));
+			if (messages is null)
+				throw new ArgumentNullException(nameof(messages), "Message list can not be empty");
 
 			return Task.Run(() =>
 			{
@@ -318,8 +334,6 @@ namespace TinyIpc.Messaging
 		[ProtoContract]
 		private class LogEntry
 		{
-			private static readonly byte[] emptyMessage = new byte[0];
-
 			public static long Overhead { get; }
 
 			[ProtoMember(1)]
@@ -332,7 +346,7 @@ namespace TinyIpc.Messaging
 			public DateTime Timestamp { get; set; }
 
 			[ProtoMember(4)]
-			public byte[] Message { get; set; } = emptyMessage;
+			public byte[] Message { get; set; } = Array.Empty<byte>();
 
 			static LogEntry()
 			{

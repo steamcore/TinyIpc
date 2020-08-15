@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,8 +41,9 @@ namespace TinyIpc.IO
 		/// </summary>
 		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
+		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, lock is being disposed")]
 		public TinyMemoryMappedFile(string name, long maxFileSize)
-			: this(name, maxFileSize, new TinyReadWriteLock(name), true)
+			: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true)
 		{
 		}
 
@@ -79,33 +81,41 @@ namespace TinyIpc.IO
 			fileWatcherTask = Task.Run(() => FileWatcher());
 		}
 
+		~TinyMemoryMappedFile()
+		{
+			Dispose(false);
+		}
+
 		public void Dispose()
 		{
-			if (disposed)
-				return;
-
-			disposed = true;
-			disposeWaitHandle.Set();
-			fileWatcherTask.Wait(TinyReadWriteLock.DefaultWaitTimeout);
-
 			Dispose(true);
 			GC.SuppressFinalize(this);
 		}
 
 		protected virtual void Dispose(bool disposing)
 		{
+			if (disposed)
+				return;
+
+			// Always set the dispose wait handle even when dispised  by the finalizer
+			// otherwize the file watcher task will needleessly have to wait for its timeout.
+			disposeWaitHandle.Set();
+			fileWatcherTask.Wait(TinyReadWriteLock.DefaultWaitTimeout);
+
 			if (disposing)
 			{
 				memoryMappedFile.Dispose();
 
-				if (disposeLock && readWriteLock is TinyReadWriteLock tinyReadWriteLock)
+				if (disposeLock && readWriteLock is IDisposable disposableLock)
 				{
-					tinyReadWriteLock.Dispose();
+					disposableLock.Dispose();
 				}
 
 				fileWaitHandle.Dispose();
 				disposeWaitHandle.Dispose();
 			}
+
+			disposed = true;
 		}
 
 		/// <summary>
@@ -150,6 +160,9 @@ namespace TinyIpc.IO
 		/// </summary>
 		public void Write(byte[] data)
 		{
+			if (data is null)
+				throw new ArgumentNullException(nameof(data));
+
 			if (data.Length > MaxFileSize)
 				throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
@@ -172,6 +185,9 @@ namespace TinyIpc.IO
 		/// </summary>
 		public void ReadWrite(Func<byte[], byte[]> updateFunc)
 		{
+			if (updateFunc is null)
+				throw new ArgumentNullException(nameof(updateFunc));
+
 			readWriteLock.AcquireWriteLock();
 
 			try
