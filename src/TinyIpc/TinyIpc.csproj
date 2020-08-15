@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AssemblyTitle>TinyIpc</AssemblyTitle>
-    <TargetFrameworks>net45;netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <AssemblyName>TinyIpc</AssemblyName>
@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="protobuf-net" Version="2.4.4" />
+    <PackageReference Include="protobuf-net" Version="3.0.29" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableSourceLink)' == 'true'">
