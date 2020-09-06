@@ -99,8 +99,8 @@ namespace TinyIpc.IO
 
 			// Always set the dispose wait handle even when dispised  by the finalizer
 			// otherwize the file watcher task will needleessly have to wait for its timeout.
-			disposeWaitHandle.Set();
-			fileWatcherTask.Wait(TinyReadWriteLock.DefaultWaitTimeout);
+			disposeWaitHandle?.Set();
+			fileWatcherTask?.Wait(TinyReadWriteLock.DefaultWaitTimeout);
 
 			if (disposing)
 			{
@@ -112,7 +112,7 @@ namespace TinyIpc.IO
 				}
 
 				fileWaitHandle.Dispose();
-				disposeWaitHandle.Dispose();
+				disposeWaitHandle?.Dispose();
 			}
 
 			disposed = true;
