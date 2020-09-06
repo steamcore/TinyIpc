@@ -153,7 +153,7 @@ namespace TinyIpc.Tests
 			var lockId = Guid.NewGuid().ToString();
 
 			// Create more than n locks
-			var locks = Enumerable.Range(0, n+1).Select(x => new TinyReadWriteLock(lockId, n, TimeSpan.FromMilliseconds(0))).ToList();
+			var locks = Enumerable.Range(0, n + 1).Select(x => new TinyReadWriteLock(lockId, n, TimeSpan.FromMilliseconds(0))).ToList();
 
 			try
 			{
