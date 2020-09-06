@@ -1,6 +1,7 @@
 # TinyIpc #
 
 [![NuGet](https://img.shields.io/nuget/v/TinyIpc.svg?maxAge=259200)](https://www.nuget.org/packages/TinyIpc/)
+![Build](https://github.com/steamcore/TinyIpc/workflows/Build/badge.svg)
 
 .NET inter process broadcast message bus.
 
