@@ -19,7 +19,7 @@ Intended for quick broadcast messaging in Windows desktop applications, it just 
 
 It's easy to use and there is no complicated setup. It is suited for small messages,
 so big messages probably need some other transport mechanism. With high enough
-troughput messages may be lost if receivers are not able to get a read lock before
+throughput messages may be lost if receivers are not able to get a read lock before
 the message timeout is reached.
 
 ## Performance ##
