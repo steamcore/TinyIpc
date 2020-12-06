@@ -22,4 +22,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="../../src/**/*.Tests.cs" />
+  </ItemGroup>
+
 </Project>

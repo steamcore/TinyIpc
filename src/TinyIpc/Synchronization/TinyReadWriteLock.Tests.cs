@@ -3,12 +3,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Shouldly;
-using TinyIpc.Synchronization;
 using Xunit;
 
-// ReSharper disable InconsistentNaming
-
-namespace TinyIpc.Tests
+namespace TinyIpc.Synchronization
 {
 	public class TinyReadWriteLockTests
 	{

@@ -4,11 +4,10 @@ using System.Text;
 using System.Threading.Tasks;
 using Shouldly;
 using TinyIpc.IO;
-using TinyIpc.Messaging;
 using TinyIpc.Synchronization;
 using Xunit;
 
-namespace TinyIpc.Tests
+namespace TinyIpc.Messaging
 {
 	public class TinyMessageBusTests
 	{

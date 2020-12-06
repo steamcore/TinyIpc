@@ -1,10 +1,9 @@
 using System;
 using System.Text;
 using Shouldly;
-using TinyIpc.IO;
 using Xunit;
 
-namespace TinyIpc.Tests
+namespace TinyIpc.IO
 {
 	public class TinyMemoryMappedFileTests
 	{
