@@ -7,7 +7,7 @@ namespace ConsoleApp
 {
 	public class Program
 	{
-		public static async Task Main(string[] args)
+		public static async Task Main()
 		{
 			using var messagebus1 = new TinyMessageBus("Example");
 			using var messagebus2 = new TinyMessageBus("Example");

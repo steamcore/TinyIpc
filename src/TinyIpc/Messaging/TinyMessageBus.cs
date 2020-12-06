@@ -48,7 +48,6 @@ namespace TinyIpc.Messaging
 			Serializer.PrepareSerializer<LogBook>();
 		}
 
-
 		/// <summary>
 		/// Initializes a new instance of the TinyMessageBus class.
 		/// </summary>

@@ -45,7 +45,7 @@ namespace TinyIpc.Messaging
 
 			var buses = new[] { messagebus1, messagebus2 };
 
-			for (int i = 0; i < firstRound; i++)
+			for (var i = 0; i < firstRound; i++)
 			{
 				var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
 				await buses[rnd.Next() % buses.Length].PublishAsync(messages);
@@ -56,7 +56,7 @@ namespace TinyIpc.Messaging
 
 			buses = new[] { messagebus1, messagebus2, messagebus3 };
 
-			for (int i = 0; i < secondRound; i++)
+			for (var i = 0; i < secondRound; i++)
 			{
 				var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
 				await buses[rnd.Next() % buses.Length].PublishAsync(messages);
@@ -82,14 +82,14 @@ namespace TinyIpc.Messaging
 			var waitTimeout = TinyReadWriteLock.DefaultWaitTimeout;
 
 			// Create underlying primitives first so they can be configured
-			var lockMutex = TinyReadWriteLock.CreateMutex(name);
-			var lockSemaphore = TinyReadWriteLock.CreateSemaphore(name, maxReaderCount);
-			var memoryMappedFile = TinyMemoryMappedFile.CreateOrOpenMemoryMappedFile(name, maxFileSize);
-			var eventWaitHandle = TinyMemoryMappedFile.CreateEventWaitHandle(name);
+			using var lockMutex = TinyReadWriteLock.CreateMutex(name);
+			using var lockSemaphore = TinyReadWriteLock.CreateSemaphore(name, maxReaderCount);
+			using var memoryMappedFile = TinyMemoryMappedFile.CreateOrOpenMemoryMappedFile(name, maxFileSize);
+			using var eventWaitHandle = TinyMemoryMappedFile.CreateEventWaitHandle(name);
 
 			// Create the actual message bus
-			var tinyReadWriteLock = new TinyReadWriteLock(lockMutex, lockSemaphore, maxReaderCount, waitTimeout);
-			var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
+			using var tinyReadWriteLock = new TinyReadWriteLock(lockMutex, lockSemaphore, maxReaderCount, waitTimeout);
+			using var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
 
 			using var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true);
 			await messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));

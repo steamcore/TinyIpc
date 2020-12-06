@@ -23,7 +23,7 @@ namespace TinyIpc.IO
 
 		public event EventHandler? FileUpdated;
 
-		public long MaxFileSize { get; private set; }
+		public long MaxFileSize { get; }
 
 		public const int DefaultMaxFileSize = 1024 * 1024;
 

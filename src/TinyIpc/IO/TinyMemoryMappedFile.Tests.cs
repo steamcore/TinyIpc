@@ -79,15 +79,14 @@ namespace TinyIpc.IO
 		[Fact]
 		public void Secondary_instance_keeps_file_alive()
 		{
-			using (var file2 = new TinyMemoryMappedFile("Test"))
-			{
-				using (var file1 = new TinyMemoryMappedFile("Test"))
-				{
-					file1.Write(new byte[] { 1, 2, 3, 4, 5 });
-				}
+			using var file2 = new TinyMemoryMappedFile("Test");
 
-				file2.GetFileSize().ShouldBe(5);
+			using (var file1 = new TinyMemoryMappedFile("Test"))
+			{
+				file1.Write(new byte[] { 1, 2, 3, 4, 5 });
 			}
+
+			file2.GetFileSize().ShouldBe(5);
 		}
 	}
 }
