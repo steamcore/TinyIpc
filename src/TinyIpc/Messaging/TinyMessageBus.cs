@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using ProtoBuf;
@@ -53,6 +54,9 @@ namespace TinyIpc.Messaging
 		/// </summary>
 		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public TinyMessageBus(string name)
 			: this(new TinyMemoryMappedFile(name), disposeFile: true)
 		{
@@ -64,6 +68,9 @@ namespace TinyIpc.Messaging
 		/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 		/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
 		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public TinyMessageBus(string name, TimeSpan minMessageAge)
 			: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge)
 		{

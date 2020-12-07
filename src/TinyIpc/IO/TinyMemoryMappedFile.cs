@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 using TinyIpc.Synchronization;
@@ -31,6 +32,9 @@ namespace TinyIpc.IO
 		/// Initializes a new instance of the TinyMemoryMappedFile class.
 		/// </summary>
 		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public TinyMemoryMappedFile(string name)
 			: this(name, DefaultMaxFileSize)
 		{
@@ -42,6 +46,9 @@ namespace TinyIpc.IO
 		/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 		[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, lock is being disposed")]
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public TinyMemoryMappedFile(string name, long maxFileSize)
 			: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true)
 		{
@@ -54,6 +61,9 @@ namespace TinyIpc.IO
 		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 		/// <param name="readWriteLock">A read/write lock that will be used to control access to the memory mapped file</param>
 		/// <param name="disposeLock">Set to true if the read/write lock is to be disposed when this instance is disposed</param>
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
 			: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock)
 		{
@@ -249,6 +259,9 @@ namespace TinyIpc.IO
 		/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
 		/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 		/// <returns>A system wide MemoryMappedFile</returns>
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
 		public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
 		{
 			if (string.IsNullOrWhiteSpace(name))
