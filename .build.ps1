@@ -23,6 +23,7 @@ task Package {
         dotnet pack .\src\TinyIpc\TinyIpc.csproj `
             --configuration Release `
             --output $outputPath `
+            /p:ContinuousIntegrationBuild="true" `
             /p:EnableSourcelink="true" `
             /p:Version=$Version
     }
