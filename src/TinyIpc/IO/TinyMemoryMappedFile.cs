@@ -1,7 +1,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
+#if NET
 using System.Runtime.Versioning;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using TinyIpc.Synchronization;

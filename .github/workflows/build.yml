@@ -19,11 +19,11 @@ jobs:
     - name: Restore tools
       run: dotnet tool restore
 
-    - name: Check code formatting
-      run: dotnet format --check
-
     - name: Restore dependencies
       run: dotnet restore
+
+    - name: Check code formatting
+      run: dotnet format --check --fix-analyzers info --fix-style info --fix-whitespace
 
     - name: Build
       run: dotnet build --no-restore

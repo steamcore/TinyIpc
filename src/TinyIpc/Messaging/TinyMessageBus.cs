@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+#if NET
 using System.Runtime.Versioning;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 using ProtoBuf;
