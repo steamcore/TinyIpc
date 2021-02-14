@@ -7,17 +7,37 @@ param (
     $Version
 )
 
-task Test {
-    exec { dotnet test .\test\TinyIpc.Tests\TinyIpc.Tests.csproj }
-}
-
 task AssertVersion {
     if (-not $Version) {
         throw "Specify version with -Version parameter"
     }
 }
 
-task Package {
+task RestoreTools {
+    exec { dotnet tool restore }
+}
+
+task Restore {
+    exec { dotnet restore }
+}
+
+task Format RestoreTools, Restore, {
+    exec { dotnet format --fix-analyzers info --fix-style info --fix-whitespace }
+}
+
+task CheckFormat RestoreTools, Restore, {
+    exec { dotnet format --check --fix-analyzers info --fix-style info --fix-whitespace }
+}
+
+task Build Restore, {
+    exec { dotnet build --no-restore }
+}
+
+task Test Build, {
+    exec { dotnet test .\test\TinyIpc.Tests\TinyIpc.Tests.csproj }
+}
+
+task Package AssertVersion, {
     $outputPath = (Get-Item ".").FullName
     exec {
         dotnet pack .\src\TinyIpc\TinyIpc.csproj `
@@ -29,4 +49,4 @@ task Package {
     }
 }
 
-task . AssertVersion, Test, Package
+task . CheckFormat, Build, Test
