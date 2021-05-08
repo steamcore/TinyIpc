@@ -13,31 +13,31 @@ task AssertVersion {
     }
 }
 
-task RestoreTools {
+task DotnetToolRestore {
     exec { dotnet tool restore }
 }
 
-task Restore {
+task DotnetRestore {
     exec { dotnet restore }
 }
 
-task Format RestoreTools, Restore, {
+task DotnetFormat DotnetToolRestore, DotnetRestore, {
     exec { dotnet format --fix-analyzers info --fix-style info --fix-whitespace }
 }
 
-task CheckFormat RestoreTools, Restore, {
+task DotnetFormatCheck DotnetToolRestore, DotnetRestore, {
     exec { dotnet format --check --fix-analyzers info --fix-style info --fix-whitespace }
 }
 
-task Build Restore, {
+task DotnetBuild DotnetRestore, {
     exec { dotnet build --no-restore }
 }
 
-task Test Build, {
+task DotnetTest DotnetBuild, {
     exec { dotnet test .\test\TinyIpc.Tests\TinyIpc.Tests.csproj }
 }
 
-task Package AssertVersion, {
+task DotnetPack AssertVersion, {
     $outputPath = (Get-Item ".").FullName
     exec {
         dotnet pack .\src\TinyIpc\TinyIpc.csproj `
@@ -49,4 +49,6 @@ task Package AssertVersion, {
     }
 }
 
-task . CheckFormat, Build, Test
+task Package DotnetPack
+
+task . DotnetFormatCheck, DotnetBuild, DotnetTest
