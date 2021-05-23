@@ -40,48 +40,12 @@ See https://github.com/dotnet/runtime/issues/4370 for more information.
 
 *This comparison was made in 2014.*
 
-<table>
-	<tr>
-		<th></th>
-		<th>TinyIPC</th>
-		<th>XDMessaging</th>
-		<th>NVents</th>
-		<th>IpcChannel</th>
-		<th>Named Pipes</th>
-	</tr>
-	<tr>
-		<td>Broadcasting to all listeners</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-		<td>&#x2713; (1)</td>
-		<td>&#x2717;</td>
-		<td>&#x2717;</td>
-	</tr>
-	<tr>
-		<td>No master process</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-		<td>&#x2717;</td>
-		<td>&#x2717;</td>
-	</tr>
-	<tr>
-		<td>Insensitive to process privilege level</td>
-		<td>&#x2713;</td>
-		<td>&#x2717;</td>
-		<td>&#x2717;</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-	</tr>
-	<tr>
-		<td>Entirely in memory</td>
-		<td>&#x2713;</td>
-		<td>&#x2717;</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-		<td>&#x2713;</td>
-	</tr>
-</table>
+|                                        | TinyIPC  | XDMessaging | NVents       | IpcChannel | Named Pipes |
+|----------------------------------------|----------|-------------|--------------|------------|-------------|
+| Broadcasting to all listeners          | &#x2713; | &#x2713;    | &#x2713; (1) | &#x2717;   | &#x2717;    |
+| No master process                      | &#x2713; | &#x2713;    | &#x2713;     | &#x2717;   | &#x2717;    |
+| Insensitive to process privilege level | &#x2713; | &#x2717;    | &#x2717;     | &#x2713;   | &#x2713;    |
+| Entirely in memory                     | &#x2713; | &#x2717;    | &#x2713;     | &#x2713;   | &#x2713;    |
 
 1 Via SSDP network discovery
 
