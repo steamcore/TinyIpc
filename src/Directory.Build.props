@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/steamcore/TinyIpc</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
