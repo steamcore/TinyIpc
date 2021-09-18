@@ -26,6 +26,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="CLSCompliantAttribute">
+      <_Parameter1>true</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Roslynator.Analyzers" Version="3.2.2" PrivateAssets="All" />
   </ItemGroup>
 
