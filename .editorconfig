@@ -156,7 +156,7 @@ dotnet_diagnostic.CA5392.severity = none
 dotnet_diagnostic.CA5394.severity = none
 
 # IDE0005: Remove unnecessary import
-dotnet_diagnostic.IDE0005.severity = suggestion
+dotnet_diagnostic.IDE0005.severity = warning
 
 # IDE0007: Use 'var' instead of explicit type
 dotnet_diagnostic.IDE0007.severity = suggestion
