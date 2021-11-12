@@ -27,13 +27,13 @@ task DotnetRestore {
 
 task DotnetFormat DotnetToolRestore, DotnetRestore, {
     exec {
-        dotnet format --fix-analyzers info --fix-style info --fix-whitespace
+        dotnet format --no-restore
     }
 }
 
 task DotnetFormatCheck DotnetToolRestore, DotnetRestore, {
     exec {
-        dotnet format --check --fix-analyzers info --fix-style info --fix-whitespace
+        dotnet format --no-restore --verify-no-changes
     }
 }
 

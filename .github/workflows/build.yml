@@ -14,7 +14,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '5.0.x'
+        dotnet-version: '6.0.x'
 
     - name: Restore tools
       run: dotnet tool restore
@@ -23,7 +23,7 @@ jobs:
       run: dotnet restore
 
     - name: Check code formatting
-      run: dotnet format --check --fix-analyzers info --fix-style info --fix-whitespace
+      run: dotnet format --no-restore --verify-no-changes
 
     - name: Build
       run: dotnet build --no-restore
