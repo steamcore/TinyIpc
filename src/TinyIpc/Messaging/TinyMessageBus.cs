@@ -15,11 +15,11 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	private readonly Guid instanceId = Guid.NewGuid();
 	private readonly TimeSpan minMessageAge;
 	private readonly ITinyMemoryMappedFile memoryMappedFile;
-	private readonly ConcurrentQueue<LogEntry> receivedMessages = new ConcurrentQueue<LogEntry>();
+	private readonly ConcurrentQueue<LogEntry> receivedMessages = new();
 
-	private readonly object messageReaderLock = new object();
-	private readonly object handlerTaskLock = new object();
-	private readonly object handlerLock = new object();
+	private readonly object messageReaderLock = new();
+	private readonly object handlerTaskLock = new();
+	private readonly object handlerLock = new();
 
 	private bool disposed;
 	private long lastEntryId = -1;
