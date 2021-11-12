@@ -1,15 +1,14 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace TinyIpc.Messaging
-{
-	public class TinyMessageReceivedEventArgs : EventArgs
-	{
-		[SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Byte array will do until possible rewrite using Span/Memory")]
-		public byte[] Message { get; }
+namespace TinyIpc.Messaging;
 
-		public TinyMessageReceivedEventArgs(byte[] message)
-		{
-			Message = message;
-		}
+public class TinyMessageReceivedEventArgs : EventArgs
+{
+	[SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Byte array will do until possible rewrite using Span/Memory")]
+	public byte[] Message { get; }
+
+	public TinyMessageReceivedEventArgs(byte[] message)
+	{
+		Message = message;
 	}
 }
