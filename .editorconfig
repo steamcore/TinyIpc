@@ -146,9 +146,6 @@ dotnet_diagnostic.CA1716.severity = none
 # CA1727: Use PascalCase for named placeholders
 dotnet_diagnostic.CA1727.severity = none
 
-# CA1848: Use the LoggerMessage delegates
-dotnet_diagnostic.CA1848.severity = none
-
 # CA2007: Do not directly await a Task
 dotnet_diagnostic.CA2007.severity = none
 
