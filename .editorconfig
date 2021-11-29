@@ -203,9 +203,6 @@ dotnet_diagnostic.RCS1077.severity = warning
 # RCS1080: Use 'Count/Length' property instead of 'Any' method
 dotnet_diagnostic.RCS1080.severity = warning
 
-# RCS1090: Call 'ConfigureAwait(false)'
-dotnet_diagnostic.RCS1090.severity = none
-
 # RCS1123: Add parentheses according to operator precedence
 dotnet_diagnostic.RCS1123.severity = none
 
