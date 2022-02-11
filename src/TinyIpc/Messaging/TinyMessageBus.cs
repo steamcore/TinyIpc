@@ -309,7 +309,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		public long LastId { get; set; }
 
 		[ProtoMember(2)]
-		public List<LogEntry> Entries { get; set; } = new List<LogEntry>();
+		public List<LogEntry> Entries { get; set; } = new();
 
 		public long CalculateLogSize()
 		{

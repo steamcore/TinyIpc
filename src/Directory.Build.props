@@ -33,11 +33,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" Version="4.0.0" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.0.2" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableSourceLink)' == 'true'">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

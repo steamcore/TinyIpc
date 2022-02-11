@@ -116,7 +116,6 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 #### Roslynator Options ####
 
 roslynator_accessibility_modifiers = explicit
-roslynator_enum_has_flag_style = operator
 roslynator_object_creation_type_style = implicit_when_type_is_obvious
 
 #### Analyzer Rules ####
@@ -226,3 +225,6 @@ dotnet_diagnostic.RCS1174.severity = warning
 
 # RCS1192: Use regular string literal instead of verbatim string literal
 dotnet_diagnostic.RCS1192.severity = none
+
+# RCS1250: Use implicit/explicit object creation
+dotnet_diagnostic.RCS1250.severity = warning
