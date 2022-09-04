@@ -22,6 +22,8 @@
 
   <PropertyGroup>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
     <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
