@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 #endif
 using System.Threading.Channels;
+using MessagePack;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using ProtoBuf;
 using TinyIpc.IO;
 
 namespace TinyIpc.Messaging;
@@ -37,11 +37,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 	public long MessagesPublished => messagesPublished;
 	public long MessagesReceived => messagesReceived;
-
-	static TinyMessageBus()
-	{
-		Serializer.PrepareSerializer<LogBook>();
-	}
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMessageBus class.
@@ -170,12 +165,12 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// Publishes a message to the message bus as soon as possible in a background task
 	/// </summary>
 	/// <param name="message"></param>
-	public Task PublishAsync(byte[] message)
+	public Task PublishAsync(IReadOnlyList<byte> message)
 	{
 		if (disposed)
 			throw new ObjectDisposedException("Can not publish messages when diposed");
 
-		if (message is null || message.Length == 0)
+		if (message is null || message.Count == 0)
 			throw new ArgumentException("Message can not be empty", nameof(message));
 
 		return PublishAsync(new[] { message });
@@ -185,7 +180,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	public Task PublishAsync(IReadOnlyList<byte[]> messages)
+	public Task PublishAsync(IReadOnlyList<IReadOnlyList<byte>> messages)
 	{
 		if (disposed)
 			throw new ObjectDisposedException("Can not publish messages when diposed");
@@ -200,7 +195,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 			if (logger is not null)
 			{
-				LogPublishingMessage(logger, messages[i].Length);
+				LogPublishingMessage(logger, messages[i].Count);
 			}
 		}
 
@@ -257,26 +252,26 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		while (publishQueue.Count > 0 && slotTimer.Elapsed < timeout)
 		{
 			// Check if the next message will fit in the log
-			if (logSize + LogEntry.Overhead + publishQueue.Peek().Message.Length > memoryMappedFile.MaxFileSize)
+			if (logSize + LogEntry.Overhead + publishQueue.Peek().Message.Count > memoryMappedFile.MaxFileSize)
 				break;
 
 			// Write the entry to the log
 			var entry = publishQueue.Dequeue();
 			entry.Id = ++logBook.LastId;
 			entry.Timestamp = batchTime;
-			logBook.Entries.Add(entry);
+			logBook.AddEntry(entry);
 
-			logSize += LogEntry.Overhead + entry.Message.Length;
+			logSize += LogEntry.Overhead + entry.Message.Count;
 
 			// Skip counting empty messages though, they are skipped on the receiving end anyway
-			if (entry.Message.Length == 0)
+			if (entry.Message.Count == 0)
 				continue;
 
 			Interlocked.Increment(ref messagesPublished);
 		}
 
 		// Flush the updated log to the memory mapped file
-		Serializer.Serialize(writeStream, logBook);
+		MessagePackSerializer.Serialize(writeStream, logBook, MessagePackOptions.Instance);
 	}
 
 	internal Task ReadAsync()
@@ -312,9 +307,11 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
 
-			foreach (var entry in logBook.Entries)
+			for (var i = 0; i < logBook.Entries.Count; i++)
 			{
-				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
+				var entry = logBook.Entries[i];
+
+				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Count == 0)
 					continue;
 
 				foreach (var receiverChannel in receiverChannels)
@@ -324,7 +321,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 				if (logger is not null)
 				{
-					LogReceivedMessage(logger, entry.Message.Length);
+					LogReceivedMessage(logger, entry.Message.Count);
 				}
 			}
 		}
@@ -382,7 +379,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		if (stream.Length == 0)
 			return new LogBook();
 
-		return Serializer.Deserialize<LogBook>(stream);
+		return MessagePackSerializer.Deserialize<LogBook>(stream, MessagePackOptions.Instance);
 	}
 
 	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message")]
@@ -393,60 +390,84 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 	[LoggerMessage(2, LogLevel.Error, "Event handler failed handling message with id {id}")]
 	private static partial void LogReceiveError(ILogger logger, Exception exception, long id);
+}
 
-	[ProtoContract]
-	private class LogBook
+[MessagePackObject]
+public sealed class LogBook
+{
+	[Key(0)]
+	public long LastId { get; set; }
+
+	[Key(1)]
+	public IReadOnlyList<LogEntry> Entries { get; set; } = Array.Empty<LogEntry>();
+
+	public void AddEntry(LogEntry entry)
 	{
-		[ProtoMember(1)]
-		public long LastId { get; set; }
-
-		[ProtoMember(2)]
-		public List<LogEntry> Entries { get; set; } = new();
-
-		public long CalculateLogSize()
+		if (Entries is not List<LogEntry> entries)
 		{
-			var size = (long)sizeof(long);
-			for (var i = 0; i < Entries.Count; i++)
-			{
-				size += LogEntry.Overhead + Entries[i].Message.Length;
-			}
-			return size;
+			entries = Entries.ToList();
+
+			Entries = entries;
 		}
 
-		public void TrimStaleEntries(DateTime cutoffPoint)
-		{
-			var i = 0;
-			for (; i < Entries.Count; i++)
-			{
-				if (Entries[i].Timestamp >= cutoffPoint)
-					break;
-			}
-			Entries.RemoveRange(0, i);
-		}
+		entries.Add(entry);
 	}
 
-	[ProtoContract]
-	private class LogEntry
+	public long CalculateLogSize()
 	{
-		public static long Overhead { get; }
-
-		[ProtoMember(1)]
-		public long Id { get; set; }
-
-		[ProtoMember(2)]
-		public Guid Instance { get; set; }
-
-		[ProtoMember(3)]
-		public DateTime Timestamp { get; set; }
-
-		[ProtoMember(4)]
-		public byte[] Message { get; set; } = Array.Empty<byte>();
-
-		static LogEntry()
+		var size = (long)sizeof(long);
+		for (var i = 0; i < Entries.Count; i++)
 		{
-			using var memoryStream = MemoryStreamPool.Manager.GetStream(nameof(LogEntry));
-			Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
-			Overhead = memoryStream.Length;
+			size += LogEntry.Overhead + Entries[i].Message.Count;
 		}
+		return size;
+	}
+
+	public void TrimStaleEntries(DateTime cutoffPoint)
+	{
+		var i = 0;
+		for (; i < Entries.Count; i++)
+		{
+			if (Entries[i].Timestamp >= cutoffPoint)
+				break;
+		}
+
+		if (Entries is not List<LogEntry> entries)
+		{
+			entries = Entries.ToList();
+
+			Entries = entries;
+		}
+
+		entries.RemoveRange(0, i);
+	}
+}
+
+[MessagePackObject]
+public sealed class LogEntry
+{
+	public static long Overhead { get; }
+
+	[Key(0)]
+	public long Id { get; set; }
+
+	[Key(1)]
+	public Guid Instance { get; set; }
+
+	[Key(2)]
+	public DateTime Timestamp { get; set; }
+
+	[Key(3)]
+	public IReadOnlyList<byte> Message { get; set; } = Array.Empty<byte>();
+
+	static LogEntry()
+	{
+		using var memoryStream = MemoryStreamPool.Manager.GetStream(nameof(LogEntry));
+		MessagePackSerializer.Serialize(
+			memoryStream,
+			new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow },
+			MessagePackOptions.Instance
+		);
+		Overhead = memoryStream.Length;
 	}
 }

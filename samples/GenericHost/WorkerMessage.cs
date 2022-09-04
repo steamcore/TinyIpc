@@ -1,29 +1,29 @@
-using ProtoBuf;
+using MessagePack;
 
 namespace GenericHost;
 
-[ProtoContract]
+[MessagePackObject]
 public class WorkerMessage
 {
-	[ProtoMember(1)]
+	[Key(1)]
 	public int ProcessId { get; set; }
 
-	[ProtoMember(2)]
+	[Key(2)]
 	public string Sentence { get; set; } = string.Empty;
 
 	public byte[] Serialize()
 	{
 		using var ms = new MemoryStream();
 
-		Serializer.Serialize(ms, this);
+		MessagePackSerializer.Serialize(ms, this, MessagePackOptions.Instance);
 
 		return ms.ToArray();
 	}
 
-	public static WorkerMessage Deserialize(byte[] data)
+	public static WorkerMessage Deserialize(IReadOnlyList<byte> data)
 	{
-		using var ms = new MemoryStream(data);
+		using var ms = new MemoryStream(data.ToArray());
 
-		return Serializer.Deserialize<WorkerMessage>(ms);
+		return MessagePackSerializer.Deserialize<WorkerMessage>(ms, MessagePackOptions.Instance);
 	}
 }

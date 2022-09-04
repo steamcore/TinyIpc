@@ -1,7 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -14,15 +15,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.4.35" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.2.1" />
-    <PackageReference Include="protobuf-net" Version="3.1.17" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.Threading.Channels" Version="6.0.0" />
   </ItemGroup>
+
+  <Target Name="GenerateMessagePack" BeforeTargets="CoreCompile" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)\MessagePack.Generated.cs">
+    <Exec Command="dotnet mpc -input $(MSBuildProjectDirectory) -output $(IntermediateOutputPath)\MessagePack.Generated.cs -resolverName TinyIpcGeneratedResolver" />
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)\MessagePack.Generated.cs" />
+      <Compile Include="$(IntermediateOutputPath)\MessagePack.Generated.cs" />
+    </ItemGroup>
+  </Target>
 
 </Project>

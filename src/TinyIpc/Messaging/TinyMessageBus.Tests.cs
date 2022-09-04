@@ -16,7 +16,7 @@ public class TinyMessageBusTests
 
 		var received = "nope";
 
-		messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString(e.Message);
+		messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString(e.Message.ToArray());
 
 		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
 		await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));

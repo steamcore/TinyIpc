@@ -14,4 +14,12 @@
     <ProjectReference Include="..\..\src\TinyIpc\TinyIpc.csproj" />
   </ItemGroup>
 
+  <Target Name="GenerateMessagePack" BeforeTargets="CoreCompile" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)\MessagePack.Generated.cs">
+    <Exec Command="dotnet mpc -input $(MSBuildProjectDirectory) -output $(IntermediateOutputPath)\MessagePack.Generated.cs -resolverName GenericHostGeneratedResolver" />
+    <ItemGroup>
+      <Compile Remove="$(IntermediateOutputPath)\MessagePack.Generated.cs" />
+      <Compile Include="$(IntermediateOutputPath)\MessagePack.Generated.cs" />
+    </ItemGroup>
+  </Target>
+
 </Project>

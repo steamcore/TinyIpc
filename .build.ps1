@@ -37,7 +37,7 @@ task DotnetFormatCheck DotnetToolRestore, DotnetRestore, {
     }
 }
 
-task DotnetBuild DotnetRestore, {
+task DotnetBuild DotnetToolRestore, DotnetRestore, {
     exec {
         dotnet build --no-restore
     }

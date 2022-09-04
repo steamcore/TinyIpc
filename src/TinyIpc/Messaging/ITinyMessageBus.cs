@@ -26,13 +26,13 @@ public interface ITinyMessageBus
 	/// Publish a message to the message bus
 	/// </summary>
 	/// <param name="message"></param>
-	Task PublishAsync(byte[] message);
+	Task PublishAsync(IReadOnlyList<byte> message);
 
 	/// <summary>
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	Task PublishAsync(IReadOnlyList<byte[]> messages);
+	Task PublishAsync(IReadOnlyList<IReadOnlyList<byte>> messages);
 
 	/// <summary>
 	/// Subscribe to messages using an async enumerable
