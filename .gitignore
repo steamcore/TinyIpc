@@ -3,6 +3,7 @@ build/
 [Oo]bj/
 .cr/
 .vs/
+*.Artifacts/
 
 *.lock.json
 *.nupkg
