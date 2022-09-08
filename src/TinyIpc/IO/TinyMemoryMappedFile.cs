@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
 #if NET
@@ -150,13 +151,18 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	public byte[] Read()
+	public T Read<T>(Func<MemoryStream, T> readData)
 	{
 		readWriteLock.AcquireReadLock();
 
 		try
 		{
-			return InternalRead();
+			using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
+
+			InternalRead(readStream);
+			readStream.Seek(0, SeekOrigin.Begin);
+
+			return readData(readStream);
 		}
 		finally
 		{
@@ -167,7 +173,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <summary>
 	/// Replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	public void Write(byte[] data)
+	public void Write(MemoryStream data)
 	{
 		if (data is null)
 			throw new ArgumentNullException(nameof(data));
@@ -192,7 +198,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	public void ReadWrite(Func<byte[], byte[]> updateFunc)
+	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
 	{
 		if (updateFunc is null)
 			throw new ArgumentNullException(nameof(updateFunc));
@@ -201,7 +207,16 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 
 		try
 		{
-			InternalWrite(updateFunc(InternalRead()));
+			using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
+			using var writeStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
+
+			InternalRead(readStream);
+			readStream.Seek(0, SeekOrigin.Begin);
+
+			updateFunc(readStream, writeStream);
+			writeStream.Seek(0, SeekOrigin.Begin);
+
+			InternalWrite(writeStream);
 		}
 		finally
 		{
@@ -233,23 +248,42 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		}
 	}
 
-	private byte[] InternalRead()
+	private void InternalRead(MemoryStream output)
 	{
 		using var accessor = memoryMappedFile.CreateViewAccessor();
 		var length = accessor.ReadInt32(0);
-		var data = new byte[length];
-		accessor.ReadArray(sizeof(int), data, 0, length);
-		return data;
+
+		var buffer = ArrayPool<byte>.Shared.Rent(length);
+		try
+		{
+			accessor.ReadArray(sizeof(int), buffer, 0, length);
+			output.Write(buffer, 0, length);
+		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(buffer);
+		}
 	}
 
-	private void InternalWrite(byte[] data)
+	private void InternalWrite(MemoryStream input)
 	{
-		if (data.Length > MaxFileSize)
-			throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
+		if (input.Length > MaxFileSize)
+			throw new ArgumentOutOfRangeException(nameof(input), "Length greater than max file size");
 
-		using var accessor = memoryMappedFile.CreateViewAccessor();
-		accessor.Write(0, data.Length);
-		accessor.WriteArray(sizeof(int), data, 0, data.Length);
+		var length = (int)input.Length;
+		var buffer = ArrayPool<byte>.Shared.Rent(length);
+		try
+		{
+			input.Read(buffer, 0, length);
+
+			using var accessor = memoryMappedFile.CreateViewAccessor();
+			accessor.Write(0, length);
+			accessor.WriteArray(sizeof(int), buffer, 0, length);
+		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(buffer);
+		}
 	}
 
 	/// <summary>

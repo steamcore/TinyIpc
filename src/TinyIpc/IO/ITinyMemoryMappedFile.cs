@@ -22,15 +22,15 @@ public interface ITinyMemoryMappedFile
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	byte[] Read();
+	T Read<T>(Func<MemoryStream, T> readData);
 
 	/// <summary>
 	/// Replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	void Write(byte[] data);
+	void Write(MemoryStream data);
 
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	void ReadWrite(Func<byte[], byte[]> updateFunc);
+	void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc);
 }

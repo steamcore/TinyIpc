@@ -32,10 +32,11 @@ public class TinyMemoryMappedFileTests
 		using var file = new TinyMemoryMappedFile("Test");
 
 		var data = Encoding.UTF8.GetBytes(message);
+		using var dataStream = new MemoryStream(data);
 
-		file.Write(data);
+		file.Write(dataStream);
 
-		file.Read().ShouldBe(data);
+		file.Read(stream => stream.ToArray()).ShouldBe(data);
 	}
 
 	[Fact]
@@ -43,7 +44,9 @@ public class TinyMemoryMappedFileTests
 	{
 		using var file = new TinyMemoryMappedFile("Test", 4);
 
-		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(new byte[] { 1, 2, 3, 4, 5 }));
+		using var dataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+
+		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(dataStream));
 	}
 
 	[Theory]
@@ -55,8 +58,9 @@ public class TinyMemoryMappedFileTests
 		using var file = new TinyMemoryMappedFile("Test");
 
 		var data = Encoding.UTF8.GetBytes(message);
+		using var dataStream = new MemoryStream(data);
 
-		file.Write(data);
+		file.Write(dataStream);
 
 		file.GetFileSize().ShouldBe(message.Length);
 	}
@@ -66,7 +70,9 @@ public class TinyMemoryMappedFileTests
 	{
 		using (var file = new TinyMemoryMappedFile("Test"))
 		{
-			file.Write(new byte[] { 1, 2, 3, 4, 5 });
+			using var dataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+
+			file.Write(dataStream);
 		}
 
 		using (var file = new TinyMemoryMappedFile("Test"))
@@ -82,7 +88,9 @@ public class TinyMemoryMappedFileTests
 
 		using (var file1 = new TinyMemoryMappedFile("Test"))
 		{
-			file1.Write(new byte[] { 1, 2, 3, 4, 5 });
+			using var dataStream = new MemoryStream(new byte[] { 1, 2, 3, 4, 5 });
+
+			file1.Write(dataStream);
 		}
 
 		file2.GetFileSize().ShouldBe(5);

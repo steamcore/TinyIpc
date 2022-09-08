@@ -68,22 +68,33 @@ internal sealed class FakeMemoryMappedFile : ITinyMemoryMappedFile, IDisposable
 		return (int)memoryStream.Length;
 	}
 
-	public byte[] Read()
+	public T Read<T>(Func<MemoryStream, T> readData)
 	{
-		return memoryStream.ToArray();
+		memoryStream.Seek(0, SeekOrigin.Begin);
+
+		return readData(memoryStream);
 	}
 
-	public void ReadWrite(Func<byte[], byte[]> updateFunc)
+	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
 	{
-		Write(updateFunc(Read()));
+		memoryStream.Seek(0, SeekOrigin.Begin);
+		writeStream.SetLength(0);
+
+		updateFunc(memoryStream, writeStream);
+
+		memoryStream.SetLength(0);
+		writeStream.Seek(0, SeekOrigin.Begin);
+
+		writeStream.CopyTo(memoryStream);
 
 		FileUpdated?.Invoke(this, EventArgs.Empty);
 	}
 
-	public void Write(byte[] data)
+	public void Write(MemoryStream data)
 	{
 		memoryStream.SetLength(0);
-		memoryStream.Write(data, 0, data.Length);
+
+		data.CopyTo(memoryStream);
 
 		FileUpdated?.Invoke(this, EventArgs.Empty);
 	}

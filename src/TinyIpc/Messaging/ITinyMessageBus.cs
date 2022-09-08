@@ -32,5 +32,5 @@ public interface ITinyMessageBus
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	Task PublishAsync(IEnumerable<byte[]> messages);
+	Task PublishAsync(IReadOnlyList<byte[]> messages);
 }

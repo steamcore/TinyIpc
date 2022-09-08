@@ -44,7 +44,7 @@ public class TinyMessageBusTests
 
 		for (var i = 0; i < firstRound; i++)
 		{
-			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
+			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray()).ToList();
 			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 		}
 
@@ -55,7 +55,7 @@ public class TinyMessageBusTests
 
 		for (var i = 0; i < secondRound; i++)
 		{
-			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray());
+			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray()).ToList();
 			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 		}
 

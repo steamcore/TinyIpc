@@ -102,7 +102,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		memoryMappedFile.FileUpdated += WhenFileUpdated;
 
-		lastEntryId = DeserializeLogBook(memoryMappedFile.Read()).LastId;
+		lastEntryId = memoryMappedFile.Read(static stream => DeserializeLogBook(stream).LastId);
 	}
 
 	public void Dispose()
@@ -160,7 +160,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	public Task PublishAsync(IEnumerable<byte[]> messages)
+	public Task PublishAsync(IReadOnlyList<byte[]> messages)
 	{
 		if (disposed)
 			throw new ObjectDisposedException("Can not publish messages when diposed");
@@ -168,20 +168,24 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		if (messages is null)
 			throw new ArgumentNullException(nameof(messages), "Message list can not be empty");
 
+		var publishQueue = new Queue<LogEntry>(messages.Count);
+		for (var i = 0; i < messages.Count; i++)
+		{
+			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = messages[i] });
+		}
+
 		return Task.Run(() =>
 		{
-			var publishQueue = new Queue<LogEntry>(messages.Select(message => new LogEntry { Instance = instanceId, Message = message }));
-
 			while (publishQueue.Count > 0)
 			{
-				memoryMappedFile.ReadWrite(data => PublishMessages(data, publishQueue, TimeSpan.FromMilliseconds(100)));
+				memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
 			}
 		});
 	}
 
-	private byte[] PublishMessages(byte[] data, Queue<LogEntry> publishQueue, TimeSpan timeout)
+	private void PublishMessages(Stream readStream, Stream writeStream, Queue<LogEntry> publishQueue, TimeSpan timeout)
 	{
-		var logBook = DeserializeLogBook(data);
+		var logBook = DeserializeLogBook(readStream);
 		logBook.TrimStaleEntries(DateTime.UtcNow - minMessageAge);
 		var logSize = logBook.CalculateLogSize();
 
@@ -212,9 +216,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 
 		// Flush the updated log to the memory mapped file
-		using var memoryStream = new MemoryStream((int)logSize);
-		Serializer.Serialize(memoryStream, logBook);
-		return memoryStream.ToArray();
+		Serializer.Serialize(writeStream, logBook);
 	}
 
 	internal Task ReadAsync()
@@ -256,7 +258,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 				}
 			});
 
-			var runningTasks = handlerTasks.Where(x => x.Status == TaskStatus.Running).ToList();
+			var runningTasks = handlerTasks.Where(static x => x.Status == TaskStatus.Running).ToList();
 			runningTasks.Add(handlerTask);
 
 			handlerTasks = runningTasks;
@@ -277,7 +279,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 			if (disposed)
 				return;
 
-			var logBook = DeserializeLogBook(memoryMappedFile.Read());
+			var logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
 			var readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
 
@@ -293,13 +295,12 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 	}
 
-	private static LogBook DeserializeLogBook(byte[] data)
+	private static LogBook DeserializeLogBook(Stream stream)
 	{
-		if (data.Length == 0)
+		if (stream.Length == 0)
 			return new LogBook();
 
-		using var memoryStream = new MemoryStream(data);
-		return Serializer.Deserialize<LogBook>(memoryStream);
+		return Serializer.Deserialize<LogBook>(stream);
 	}
 
 	[ProtoContract]
@@ -352,7 +353,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		static LogEntry()
 		{
-			using var memoryStream = new MemoryStream();
+			using var memoryStream = MemoryStreamPool.Manager.GetStream(nameof(LogEntry));
 			Serializer.Serialize(memoryStream, new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow });
 			Overhead = memoryStream.Length;
 		}
