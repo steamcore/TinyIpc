@@ -175,11 +175,17 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = messages[i] });
 		}
 
-		return Task.Run(() =>
+		return Task.Run(async () =>
 		{
 			while (publishQueue.Count > 0)
 			{
 				memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
+
+				// Give messages in the published log a chance to expire in case it is full
+				if (publishQueue.Count > 0)
+				{
+					await Task.Delay(50);
+				}
 			}
 		});
 	}
