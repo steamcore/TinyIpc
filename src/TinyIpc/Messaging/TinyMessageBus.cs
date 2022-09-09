@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Channels;
 #if NET
 using System.Runtime.Versioning;
 #endif
@@ -15,20 +15,16 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	private readonly Guid instanceId = Guid.NewGuid();
 	private readonly TimeSpan minMessageAge;
 	private readonly ITinyMemoryMappedFile memoryMappedFile;
-	private readonly ConcurrentQueue<LogEntry> receivedMessages = new();
+	private readonly Channel<LogEntry> receiverChannel = Channel.CreateUnbounded<LogEntry>();
+	private readonly Task receiverTask;
 
 	private readonly object messageReaderLock = new();
-	private readonly object handlerTaskLock = new();
-	private readonly object handlerLock = new();
 
 	private bool disposed;
 	private long lastEntryId = -1;
 	private long messagesPublished;
 	private long messagesReceived;
-	private int waitingHandlers;
 	private int waitingReceivers;
-
-	private IReadOnlyList<Task> handlerTasks = new List<Task>();
 
 	/// <summary>
 	/// Called whenever a new message is received
@@ -103,6 +99,8 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		memoryMappedFile.FileUpdated += WhenFileUpdated;
 
 		lastEntryId = memoryMappedFile.Read(static stream => DeserializeLogBook(stream).LastId);
+
+		receiverTask = Task.Run(() => ReceiverWorker());
 	}
 
 	public void Dispose()
@@ -121,6 +119,9 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 			memoryMappedFile.FileUpdated -= WhenFileUpdated;
 
 			disposed = true;
+
+			receiverChannel.Writer.Complete();
+			receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
 
 			lock (messageReaderLock)
 			{
@@ -221,56 +222,23 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 
 	internal Task ReadAsync()
 	{
-		ReceiveMessages();
-		HandleReceivedMessages();
-
-		lock (handlerTaskLock)
-		{
-			return Task.WhenAll(handlerTasks.ToArray());
-		}
+		return ReceiveMessages();
 	}
 
 	private void WhenFileUpdated(object? sender, EventArgs args)
 	{
-		ReceiveMessages();
-		HandleReceivedMessages();
+		_ = ReceiveMessages();
 	}
 
-	private void HandleReceivedMessages()
-	{
-		if (waitingHandlers > 0 || disposed)
-			return;
-
-		Interlocked.Increment(ref waitingHandlers);
-
-		lock (handlerTaskLock)
-		{
-			var handlerTask = Task.Run(() =>
-			{
-				lock (handlerLock)
-				{
-					Interlocked.Decrement(ref waitingHandlers);
-
-					while (receivedMessages.TryDequeue(out var entry))
-					{
-						MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(entry.Message));
-					}
-				}
-			});
-
-			var runningTasks = handlerTasks.Where(static x => x.Status == TaskStatus.Running).ToList();
-			runningTasks.Add(handlerTask);
-
-			handlerTasks = runningTasks;
-		}
-	}
-
-	private void ReceiveMessages()
+	private async Task ReceiveMessages()
 	{
 		if (waitingReceivers > 0 || disposed)
 			return;
 
 		Interlocked.Increment(ref waitingReceivers);
+
+		LogBook logBook;
+		long readFrom;
 
 		lock (messageReaderLock)
 		{
@@ -279,18 +247,36 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 			if (disposed)
 				return;
 
-			var logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
-			var readFrom = lastEntryId;
+			logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
+			readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
+		}
 
-			foreach (var entry in logBook.Entries)
+		foreach (var entry in logBook.Entries)
+		{
+			if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
+				continue;
+
+			await receiverChannel.Writer.WriteAsync(entry);
+		}
+	}
+
+	[SuppressMessage("Roslynator", "RCS1075:Avoid empty catch clause that catches System.Exception.", Justification = "Temporarily suppressed until logging is added")]
+	private async Task ReceiverWorker()
+	{
+		while (await receiverChannel.Reader.WaitToReadAsync().ConfigureAwait(false))
+		{
+			while (receiverChannel.Reader.TryRead(out var entry))
 			{
-				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
-					continue;
-
-				receivedMessages.Enqueue(entry);
-
 				Interlocked.Increment(ref messagesReceived);
+
+				try
+				{
+					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(entry.Message));
+				}
+				catch (Exception)
+				{
+				}
 			}
 		}
 	}

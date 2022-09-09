@@ -24,6 +24,9 @@ public class TinyMessageBusTests
 
 		await messagebus2.ReadAsync();
 
+		// Disposing the message bus forces the read task to finish
+		messagebus2.Dispose();
+
 		received.ShouldBe("yes");
 	}
 
@@ -63,6 +66,11 @@ public class TinyMessageBusTests
 		await messagebus1.ReadAsync();
 		await messagebus2.ReadAsync();
 		await messagebus3.ReadAsync();
+
+		// Disposing the message buses forces the read tasks to finish
+		messagebus1.Dispose();
+		messagebus2.Dispose();
+		messagebus3.Dispose();
 
 		// Counters should check out
 		messagebus1.MessagesReceived.ShouldBe(total * messagesPerRound - messagebus1.MessagesPublished);
