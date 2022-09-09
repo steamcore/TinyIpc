@@ -134,17 +134,9 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <returns>File size</returns>
 	public int GetFileSize()
 	{
-		readWriteLock.AcquireReadLock();
-
-		try
-		{
-			using var accessor = memoryMappedFile.CreateViewAccessor();
-			return accessor.ReadInt32(0);
-		}
-		finally
-		{
-			readWriteLock.ReleaseReadLock();
-		}
+		using var readLock = readWriteLock.AcquireReadLock();
+		using var accessor = memoryMappedFile.CreateViewAccessor();
+		return accessor.ReadInt32(0);
 	}
 
 	/// <summary>
@@ -153,21 +145,13 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <returns>File content</returns>
 	public T Read<T>(Func<MemoryStream, T> readData)
 	{
-		readWriteLock.AcquireReadLock();
+		using var readLock = readWriteLock.AcquireReadLock();
+		using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
 
-		try
-		{
-			using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
+		InternalRead(readStream);
+		readStream.Seek(0, SeekOrigin.Begin);
 
-			InternalRead(readStream);
-			readStream.Seek(0, SeekOrigin.Begin);
-
-			return readData(readStream);
-		}
-		finally
-		{
-			readWriteLock.ReleaseReadLock();
-		}
+		return readData(readStream);
 	}
 
 	/// <summary>
@@ -181,7 +165,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		if (data.Length > MaxFileSize)
 			throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
 
-		readWriteLock.AcquireWriteLock();
+		using var writeLock = readWriteLock.AcquireWriteLock();
 
 		try
 		{
@@ -189,7 +173,6 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		}
 		finally
 		{
-			readWriteLock.ReleaseWriteLock();
 			fileWaitHandle.Set();
 			fileWaitHandle.Reset();
 		}
@@ -203,7 +186,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		if (updateFunc is null)
 			throw new ArgumentNullException(nameof(updateFunc));
 
-		readWriteLock.AcquireWriteLock();
+		using var writeLock = readWriteLock.AcquireWriteLock();
 
 		try
 		{
@@ -220,7 +203,6 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		}
 		finally
 		{
-			readWriteLock.ReleaseWriteLock();
 			fileWaitHandle.Set();
 			fileWaitHandle.Reset();
 		}

@@ -8,6 +8,7 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 {
 	private readonly Mutex mutex;
 	private readonly Semaphore semaphore;
+	private readonly SemaphoreSlim synchronizationLock = new(1, 1);
 	private readonly int maxReaderCount;
 	private readonly TimeSpan waitTimeout;
 
@@ -95,41 +96,50 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 		if (disposed)
 			return;
 
-		// Always release held semaphore locks even when triggered by the finalizer
-		// or they will remain held indefinitely.
-		if (readLocks > 0)
-		{
-			semaphore.Release(readLocks);
-		}
-		else if (writeLock)
-		{
-			semaphore.Release(maxReaderCount);
-		}
-
-		readLocks = 0;
-		writeLock = false;
-
 		if (disposing)
 		{
-			mutex.Dispose();
-			semaphore.Dispose();
+			// The Mutex and Semaphore MUST NOT be disposed while they are being held,
+			// it is better to throw and not dispose them at all rather than to dispose
+			// them and prevent some other thread to release them or it might break other
+			// processes as the locks may be held indefinitely.
+			if (!synchronizationLock.Wait(waitTimeout))
+				throw new TimeoutException("Could not dispose of locks, timed out waiting for SemaphoreSlim");
 		}
 
 		disposed = true;
+
+		// Always release held Mutex and Semaphore even when triggered by the finalizer
+		mutex?.Dispose();
+		semaphore?.Dispose();
+		synchronizationLock?.Dispose();
 	}
 
 	/// <summary>
-	/// Acquire one read lock
+	/// Acquire a read lock, only one read lock can be held by once instance
+	/// but multiple read locks may be held at the same time by multiple instances
 	/// </summary>
-	public void AcquireReadLock()
+	/// <returns>A disposable that releases the read lock</returns>
+	public IDisposable AcquireReadLock()
 	{
+		if (disposed)
+			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+
+		if (!synchronizationLock.Wait(waitTimeout))
+			throw new TimeoutException("Could not acquire read lock, timed out waiting for SemaphoreSlim");
+
 		if (!mutex.WaitOne(waitTimeout))
-			throw new TimeoutException("Gave up waiting for read lock");
+		{
+			synchronizationLock.Release();
+			throw new TimeoutException("Could not acquire read lock, timed out waiting for Mutex");
+		}
 
 		try
 		{
 			if (!semaphore.WaitOne(waitTimeout))
-				throw new TimeoutException("Gave up waiting for read lock");
+			{
+				synchronizationLock.Release();
+				throw new TimeoutException("Could not acquire read lock, timed out waiting for Semaphore");
+			}
 
 			Interlocked.Increment(ref readLocks);
 		}
@@ -137,15 +147,32 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 		{
 			mutex.ReleaseMutex();
 		}
+
+		return new SynchronizationDisposable(() =>
+		{
+			semaphore.Release();
+			synchronizationLock.Release();
+			Interlocked.Decrement(ref readLocks);
+		});
 	}
 
 	/// <summary>
 	/// Acquires exclusive write locking by consuming all read locks
 	/// </summary>
-	public void AcquireWriteLock()
+	/// <returns>A disposable that releases the write lock</returns>
+	public IDisposable AcquireWriteLock()
 	{
+		if (disposed)
+			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+
+		if (!synchronizationLock.Wait(waitTimeout))
+			throw new TimeoutException("Could not acquire write lock, timed out waiting for SemaphoreSlim");
+
 		if (!mutex.WaitOne(waitTimeout))
-			throw new TimeoutException("Gave up waiting for write lock");
+		{
+			synchronizationLock.Release();
+			throw new TimeoutException("Could not acquire write lock, timed out waiting for Mutex");
+		}
 
 		var readersAcquired = 0;
 		try
@@ -153,39 +180,32 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 			for (var i = 0; i < maxReaderCount; i++)
 			{
 				if (!semaphore.WaitOne(waitTimeout))
-					throw new TimeoutException("Gave up waiting for write lock");
+				{
+					if (readersAcquired > 0)
+					{
+						semaphore.Release(readersAcquired);
+					}
+
+					synchronizationLock.Release();
+					throw new TimeoutException("Could not acquire write lock, timed out waiting for Semaphore");
+				}
 
 				readersAcquired++;
 			}
+
 			writeLock = true;
-		}
-		catch (TimeoutException) when (readersAcquired > 0)
-		{
-			semaphore.Release(readersAcquired);
-			throw;
 		}
 		finally
 		{
 			mutex.ReleaseMutex();
 		}
-	}
 
-	/// <summary>
-	/// Release one read lock
-	/// </summary>
-	public void ReleaseReadLock()
-	{
-		semaphore.Release();
-		Interlocked.Decrement(ref readLocks);
-	}
-
-	/// <summary>
-	/// Release write lock
-	/// </summary>
-	public void ReleaseWriteLock()
-	{
-		writeLock = false;
-		semaphore.Release(maxReaderCount);
+		return new SynchronizationDisposable(() =>
+		{
+			semaphore.Release(maxReaderCount);
+			synchronizationLock.Release();
+			writeLock = false;
+		});
 	}
 
 	/// <summary>
@@ -207,5 +227,27 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	public static Semaphore CreateSemaphore(string name, int maxReaderCount)
 	{
 		return new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
+	}
+
+	private class SynchronizationDisposable : IDisposable
+	{
+		private readonly Action action;
+
+		private bool disposed;
+
+		public SynchronizationDisposable(Action action)
+		{
+			this.action = action;
+		}
+
+		public void Dispose()
+		{
+			if (disposed)
+				return;
+
+			disposed = true;
+
+			action();
+		}
 	}
 }

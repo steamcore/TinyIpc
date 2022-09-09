@@ -28,21 +28,24 @@ public class TinyReadWriteLockTests
 		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-		readWriteLock1.AcquireReadLock();
+		var readLock1 = readWriteLock1.AcquireReadLock();
+		IDisposable writeLock2 = null;
 
-		var writeLockTask = Task.Run(() => readWriteLock2.AcquireWriteLock());
+		var writeLockTask = Task.Run(() => writeLock2 = readWriteLock2.AcquireWriteLock());
 
 		WaitForTaskToStart(writeLockTask);
 
 		readWriteLock1.IsReaderLockHeld.ShouldBeTrue();
 		readWriteLock2.IsWriterLockHeld.ShouldBeFalse();
 
-		readWriteLock1.ReleaseReadLock();
+		readLock1.Dispose();
 
 		writeLockTask.Wait();
 
 		readWriteLock1.IsReaderLockHeld.ShouldBeFalse();
 		readWriteLock2.IsWriterLockHeld.ShouldBeTrue();
+
+		writeLock2?.Dispose();
 	}
 
 	[Fact]
@@ -53,61 +56,48 @@ public class TinyReadWriteLockTests
 		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-		readWriteLock1.AcquireWriteLock();
+		var writeLock1 = readWriteLock1.AcquireWriteLock();
+		IDisposable readLock2 = null;
 
-		var readLockTask = Task.Run(() => readWriteLock2.AcquireReadLock());
+		var readLockTask = Task.Run(() => readLock2 = readWriteLock2.AcquireReadLock());
 
 		WaitForTaskToStart(readLockTask);
 
 		readWriteLock1.IsWriterLockHeld.ShouldBeTrue();
 		readWriteLock2.IsReaderLockHeld.ShouldBeFalse();
 
-		readWriteLock1.ReleaseWriteLock();
+		writeLock1.Dispose();
 
 		readLockTask.Wait();
 
 		readWriteLock1.IsWriterLockHeld.ShouldBeFalse();
 		readWriteLock2.IsReaderLockHeld.ShouldBeTrue();
+
+		readLock2.Dispose();
 	}
 
 	[Fact]
-	public void Calling_ReleaseReadLock_should_release_lock()
+	public void Calling_Dispose_on_read_lock_should_release_lock()
 	{
 		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
 
-		readWriteLock.AcquireReadLock();
+		var readLock = readWriteLock.AcquireReadLock();
 		readWriteLock.IsReaderLockHeld.ShouldBeTrue();
 
-		readWriteLock.ReleaseReadLock();
+		readLock.Dispose();
 		readWriteLock.IsReaderLockHeld.ShouldBeFalse();
 	}
 
 	[Fact]
-	public void Calling_ReleaseWriteLock_should_release_locks()
+	public void Calling_Dispose_on_write_lock_should_release_locks()
 	{
 		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 2);
 
-		readWriteLock.AcquireWriteLock();
+		var writeLock = readWriteLock.AcquireWriteLock();
 		readWriteLock.IsWriterLockHeld.ShouldBeTrue();
 
-		readWriteLock.ReleaseWriteLock();
+		writeLock.Dispose();
 		readWriteLock.IsWriterLockHeld.ShouldBeFalse();
-	}
-
-	[Fact]
-	public void Calling_ReleaseReadLock_without_any_lock_held_should_throw()
-	{
-		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
-
-		Should.Throw<SemaphoreFullException>(() => readWriteLock.ReleaseReadLock());
-	}
-
-	[Fact]
-	public void Calling_ReleaseWriteLock_without_any_lock_held_should_throw()
-	{
-		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
-
-		Should.Throw<SemaphoreFullException>(() => readWriteLock.ReleaseWriteLock());
 	}
 
 	[Fact]
@@ -119,7 +109,7 @@ public class TinyReadWriteLockTests
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0));
 
 		// Aquire the first lock
-		readWriteLock1.AcquireWriteLock();
+		var writeLock1 = readWriteLock1.AcquireWriteLock();
 
 		// The second lock should now throw TimeoutException
 		Should.Throw<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
@@ -129,12 +119,14 @@ public class TinyReadWriteLockTests
 		readWriteLock2.IsWriterLockHeld.ShouldBeFalse();
 
 		// By releasing the first lock, the second lock should now be able to be held
-		readWriteLock1.ReleaseWriteLock();
-		readWriteLock2.AcquireWriteLock();
+		writeLock1.Dispose();
+		var writeLock2 = readWriteLock2.AcquireWriteLock();
 
 		// Make sure the expected locks are held
 		readWriteLock1.IsWriterLockHeld.ShouldBeFalse();
 		readWriteLock2.IsWriterLockHeld.ShouldBeTrue();
+
+		writeLock2.Dispose();
 	}
 
 	[Theory]
@@ -147,13 +139,14 @@ public class TinyReadWriteLockTests
 
 		// Create more than n locks
 		var locks = Enumerable.Range(0, n + 1).Select(x => new TinyReadWriteLock(lockId, n, TimeSpan.FromMilliseconds(0))).ToList();
+		var heldLocks = new List<IDisposable>();
 
 		try
 		{
 			// Aquire n locks
 			foreach (var rwLock in locks.Take(n))
 			{
-				rwLock.AcquireReadLock();
+				heldLocks.Add(rwLock.AcquireReadLock());
 			}
 
 			// The first n locks should now be held
@@ -166,14 +159,19 @@ public class TinyReadWriteLockTests
 			Should.Throw<TimeoutException>(() => locks[n].AcquireReadLock());
 
 			// Release any lock of the first locks
-			locks[0].ReleaseReadLock();
+			heldLocks[0].Dispose();
 
 			// The last lock should now be able to aquire the lock
-			locks[n].AcquireReadLock();
+			heldLocks.Add(locks[n].AcquireReadLock());
 			locks[n].IsReaderLockHeld.ShouldBeTrue("Expected last lock to be held");
 		}
 		finally
 		{
+			foreach (var heldLock in heldLocks)
+			{
+				heldLock.Dispose();
+			}
+
 			foreach (var rwLock in locks)
 			{
 				rwLock.Dispose();
