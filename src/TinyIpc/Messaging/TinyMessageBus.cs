@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 #if NET
 using System.Runtime.Versioning;
 #endif
@@ -9,7 +11,7 @@ using TinyIpc.IO;
 
 namespace TinyIpc.Messaging;
 
-public class TinyMessageBus : IDisposable, ITinyMessageBus
+public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 {
 	private readonly bool disposeFile;
 	private readonly Guid instanceId = Guid.NewGuid();
@@ -19,7 +21,7 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	private readonly Task receiverTask;
 
 	private readonly object messageReaderLock = new();
-
+	private readonly ILogger<TinyMessageBus>? logger;
 	private bool disposed;
 	private long lastEntryId = -1;
 	private long messagesPublished;
@@ -34,11 +36,18 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	public long MessagesPublished => messagesPublished;
 	public long MessagesReceived => messagesReceived;
 
-	public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(500);
-
 	static TinyMessageBus()
 	{
 		Serializer.PrepareSerializer<LogBook>();
+	}
+
+	/// <summary>
+	/// Initializes a new instance of the TinyMessageBus class.
+	/// </summary>
+	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
+	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, IOptions<TinyIpcOptions> options, ILogger<TinyMessageBus> logger)
+		: this(memoryMappedFile, false, options.Value.MinMessageAge, logger)
+	{
 	}
 
 	/// <summary>
@@ -49,8 +58,8 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	public TinyMessageBus(string name)
-		: this(new TinyMemoryMappedFile(name), disposeFile: true)
+	public TinyMessageBus(string name, ILogger<TinyMessageBus>? logger = null)
+		: this(new TinyMemoryMappedFile(name), disposeFile: true, logger)
 	{
 	}
 
@@ -63,8 +72,8 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	public TinyMessageBus(string name, TimeSpan minMessageAge)
-		: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge)
+	public TinyMessageBus(string name, TimeSpan minMessageAge, ILogger<TinyMessageBus>? logger = null)
+		: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge, logger)
 	{
 	}
 
@@ -76,8 +85,8 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per half second.
 	/// </param>
 	/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
-	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile)
-		: this(memoryMappedFile, disposeFile, DefaultMinMessageAge)
+	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, ILogger<TinyMessageBus>? logger = null)
+		: this(memoryMappedFile, disposeFile, TinyIpcOptions.DefaultMinMessageAge, logger)
 	{
 	}
 
@@ -90,11 +99,12 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </param>
 	/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
 	/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
-	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, TimeSpan minMessageAge)
+	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, bool disposeFile, TimeSpan minMessageAge, ILogger<TinyMessageBus>? logger = null)
 	{
 		this.memoryMappedFile = memoryMappedFile ?? throw new ArgumentNullException(nameof(memoryMappedFile));
 		this.disposeFile = disposeFile;
 		this.minMessageAge = minMessageAge;
+		this.logger = logger;
 
 		memoryMappedFile.FileUpdated += WhenFileUpdated;
 
@@ -173,6 +183,11 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 		for (var i = 0; i < messages.Count; i++)
 		{
 			publishQueue.Enqueue(new LogEntry { Instance = instanceId, Message = messages[i] });
+
+			if (logger is not null)
+			{
+				LogPublishingMessage(logger, messages[i].Length);
+			}
 		}
 
 		return Task.Run(async () =>
@@ -264,10 +279,14 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 				continue;
 
 			await receiverChannel.Writer.WriteAsync(entry);
+
+			if (logger is not null)
+			{
+				LogReceivedMessage(logger, entry.Message.Length);
+			}
 		}
 	}
 
-	[SuppressMessage("Roslynator", "RCS1075:Avoid empty catch clause that catches System.Exception.", Justification = "Temporarily suppressed until logging is added")]
 	private async Task ReceiverWorker()
 	{
 		while (await receiverChannel.Reader.WaitToReadAsync().ConfigureAwait(false))
@@ -280,8 +299,12 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 				{
 					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(entry.Message));
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
+					if (logger is not null)
+					{
+						LogReceiveError(logger, ex, entry.Id);
+					}
 				}
 			}
 		}
@@ -294,6 +317,15 @@ public class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		return Serializer.Deserialize<LogBook>(stream);
 	}
+
+	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message")]
+	private static partial void LogPublishingMessage(ILogger logger, int message_length);
+
+	[LoggerMessage(1, LogLevel.Debug, "Received {message_length} byte message")]
+	private static partial void LogReceivedMessage(ILogger logger, int message_length);
+
+	[LoggerMessage(2, LogLevel.Error, "Event handler failed handling message with id {id}")]
+	private static partial void LogReceiveError(ILogger logger, Exception exception, long id);
 
 	[ProtoContract]
 	private class LogBook

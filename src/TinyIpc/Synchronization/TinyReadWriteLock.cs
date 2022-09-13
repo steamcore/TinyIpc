@@ -1,16 +1,20 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
 namespace TinyIpc.Synchronization;
 
 /// <summary>
 /// Implements a simple inter process read/write locking mechanism
 /// Inspired by http://www.joecheng.com/blog/entries/Writinganinter-processRea.html
 /// </summary>
-public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
+public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 {
 	private readonly Mutex mutex;
 	private readonly Semaphore semaphore;
 	private readonly SemaphoreSlim synchronizationLock = new(1, 1);
 	private readonly int maxReaderCount;
 	private readonly TimeSpan waitTimeout;
+	private readonly ILogger<TinyReadWriteLock>? logger;
 
 	private bool disposed;
 	private int readLocks;
@@ -19,15 +23,21 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	public bool IsReaderLockHeld => readLocks > 0;
 	public bool IsWriterLockHeld => writeLock;
 
-	public const int DefaultMaxReaderCount = 6;
-	public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(5);
+	/// <summary>
+	/// Initializes a new instance of the TinyReadWriteLock class.
+	/// </summary>
+	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
+	public TinyReadWriteLock(IOptions<TinyIpcOptions> options, ILogger<TinyReadWriteLock> logger)
+		: this(options.Value.Name, options.Value.MaxReaderCount, options.Value.WaitTimeout, logger)
+	{
+	}
 
 	/// <summary>
 	/// Initializes a new instance of the TinyReadWriteLock class.
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
-	public TinyReadWriteLock(string name)
-		: this(name, DefaultMaxReaderCount, DefaultWaitTimeout)
+	public TinyReadWriteLock(string name, ILogger<TinyReadWriteLock>? logger = null)
+		: this(name, TinyIpcOptions.DefaultMaxReaderCount, TinyIpcOptions.DefaultWaitTimeout, logger)
 	{
 	}
 
@@ -36,8 +46,8 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
-	public TinyReadWriteLock(string name, int maxReaderCount)
-		: this(name, maxReaderCount, DefaultWaitTimeout)
+	public TinyReadWriteLock(string name, int maxReaderCount, ILogger<TinyReadWriteLock>? logger = null)
+		: this(name, maxReaderCount, TinyIpcOptions.DefaultWaitTimeout, logger)
 	{
 	}
 
@@ -47,7 +57,7 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
 	/// <param name="waitTimeout">How long to wait before giving up aquiring read and write locks</param>
-	public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout)
+	public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout, ILogger<TinyReadWriteLock>? logger = null)
 	{
 		if (string.IsNullOrWhiteSpace(name))
 			throw new ArgumentException("Lock must be named", nameof(name));
@@ -57,6 +67,7 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 
 		this.maxReaderCount = maxReaderCount;
 		this.waitTimeout = waitTimeout;
+		this.logger = logger;
 
 		mutex = CreateMutex(name);
 		semaphore = CreateSemaphore(name, maxReaderCount);
@@ -69,13 +80,14 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <param name="semaphore">Should be a system wide Semaphore with at least one max count, default is 6</param>
 	/// <param name="maxReaderCount">Maxium simultaneous readers, must be the same as the Semaphore count, default is 6</param>
 	/// <param name="waitTimeout">How long to wait before giving up aquiring read and write locks</param>
-	public TinyReadWriteLock(Mutex mutex, Semaphore semaphore, int maxReaderCount, TimeSpan waitTimeout)
+	public TinyReadWriteLock(Mutex mutex, Semaphore semaphore, int maxReaderCount, TimeSpan waitTimeout, ILogger<TinyReadWriteLock>? logger = null)
 	{
 		if (maxReaderCount <= 0)
 			throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
 
 		this.maxReaderCount = maxReaderCount;
 		this.waitTimeout = waitTimeout;
+		this.logger = logger;
 		this.mutex = mutex ?? throw new ArgumentNullException(nameof(mutex));
 		this.semaphore = semaphore ?? throw new ArgumentNullException(nameof(semaphore));
 	}
@@ -148,11 +160,21 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 			mutex.ReleaseMutex();
 		}
 
+		if (logger is not null)
+		{
+			LogAcquiredReadLock(logger);
+		}
+
 		return new SynchronizationDisposable(() =>
 		{
 			semaphore.Release();
 			synchronizationLock.Release();
 			Interlocked.Decrement(ref readLocks);
+
+			if (logger is not null)
+			{
+				LogReleasedReadLock(logger);
+			}
 		});
 	}
 
@@ -200,11 +222,21 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 			mutex.ReleaseMutex();
 		}
 
+		if (logger is not null)
+		{
+			LogAcquiredWriteLock(logger);
+		}
+
 		return new SynchronizationDisposable(() =>
 		{
 			semaphore.Release(maxReaderCount);
 			synchronizationLock.Release();
 			writeLock = false;
+
+			if (logger is not null)
+			{
+				LogReleasedWriteLock(logger);
+			}
 		});
 	}
 
@@ -228,6 +260,18 @@ public class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	{
 		return new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);
 	}
+
+	[LoggerMessage(0, LogLevel.Trace, "Acquired read lock")]
+	private static partial void LogAcquiredReadLock(ILogger logger);
+
+	[LoggerMessage(1, LogLevel.Trace, "Released read lock")]
+	private static partial void LogReleasedReadLock(ILogger logger);
+
+	[LoggerMessage(2, LogLevel.Trace, "Acquired write lock")]
+	private static partial void LogAcquiredWriteLock(ILogger logger);
+
+	[LoggerMessage(3, LogLevel.Trace, "Released write lock")]
+	private static partial void LogReleasedWriteLock(ILogger logger);
 
 	private class SynchronizationDisposable : IDisposable
 	{

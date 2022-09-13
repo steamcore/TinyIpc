@@ -82,9 +82,9 @@ public class TinyMessageBusTests
 	public async Task All_primitives_should_be_configurable()
 	{
 		var name = "Example";
-		var maxReaderCount = TinyReadWriteLock.DefaultMaxReaderCount;
-		var maxFileSize = TinyMemoryMappedFile.DefaultMaxFileSize;
-		var waitTimeout = TinyReadWriteLock.DefaultWaitTimeout;
+		var maxReaderCount = TinyIpcOptions.DefaultMaxReaderCount;
+		var maxFileSize = TinyIpcOptions.DefaultMaxFileSize;
+		var waitTimeout = TinyIpcOptions.DefaultWaitTimeout;
 
 		// Create underlying primitives first so they can be configured
 		using var lockMutex = TinyReadWriteLock.CreateMutex(name);

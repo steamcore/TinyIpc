@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 #if NET
 using System.Runtime.Versioning;
 #endif
@@ -11,13 +13,14 @@ namespace TinyIpc.IO;
 /// <summary>
 /// Wraps a MemoryMappedFile with inter process synchronization and signaling
 /// </summary>
-public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
+public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 {
 	private readonly Task fileWatcherTask;
 	private readonly MemoryMappedFile memoryMappedFile;
 	private readonly ITinyReadWriteLock readWriteLock;
 	private readonly bool disposeLock;
 	private readonly EventWaitHandle fileWaitHandle;
+	private readonly ILogger<TinyMemoryMappedFile>? logger;
 
 	private readonly EventWaitHandle disposeWaitHandle;
 	private bool disposed;
@@ -26,7 +29,17 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 
 	public long MaxFileSize { get; }
 
-	public const int DefaultMaxFileSize = 1024 * 1024;
+	/// <summary>
+	/// Initializes a new instance of the TinyMemoryMappedFile class.
+	/// </summary>
+	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
+	public TinyMemoryMappedFile(ITinyReadWriteLock readWriteLock, IOptions<TinyIpcOptions> options, ILogger<TinyMemoryMappedFile> logger)
+		: this(options.Value.Name, options.Value.MaxFileSize, readWriteLock, disposeLock: false, logger)
+	{
+	}
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMemoryMappedFile class.
@@ -35,8 +48,8 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	public TinyMemoryMappedFile(string name)
-		: this(name, DefaultMaxFileSize)
+	public TinyMemoryMappedFile(string name, ILogger<TinyMemoryMappedFile>? logger = null)
+		: this(name, TinyIpcOptions.DefaultMaxFileSize, logger)
 	{
 	}
 
@@ -49,8 +62,8 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	public TinyMemoryMappedFile(string name, long maxFileSize)
-		: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true)
+	public TinyMemoryMappedFile(string name, long maxFileSize, ILogger<TinyMemoryMappedFile>? logger = null)
+		: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true, logger)
 	{
 	}
 
@@ -64,8 +77,8 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
-		: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock)
+	public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock, ILogger<TinyMemoryMappedFile>? logger = null)
+		: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock, logger)
 	{
 	}
 
@@ -77,12 +90,13 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 	/// <param name="readWriteLock">A read/write lock that will be used to control access to the memory mapped file</param>
 	/// <param name="disposeLock">Set to true if the read/write lock is to be disposed when this instance is disposed</param>
-	public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock)
+	public TinyMemoryMappedFile(MemoryMappedFile memoryMappedFile, EventWaitHandle fileWaitHandle, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock, ILogger<TinyMemoryMappedFile>? logger = null)
 	{
 		this.readWriteLock = readWriteLock ?? throw new ArgumentNullException(nameof(readWriteLock));
 		this.memoryMappedFile = memoryMappedFile ?? throw new ArgumentNullException(nameof(memoryMappedFile));
 		this.fileWaitHandle = fileWaitHandle ?? throw new ArgumentNullException(nameof(fileWaitHandle));
 		this.disposeLock = disposeLock;
+		this.logger = logger;
 
 		MaxFileSize = maxFileSize;
 
@@ -110,7 +124,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		// Always set the dispose wait handle even when dispised  by the finalizer
 		// otherwize the file watcher task will needleessly have to wait for its timeout.
 		disposeWaitHandle?.Set();
-		fileWatcherTask?.Wait(TinyReadWriteLock.DefaultWaitTimeout);
+		fileWatcherTask?.Wait(TinyIpcOptions.DefaultWaitTimeout);
 
 		if (disposing)
 		{
@@ -136,7 +150,14 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	{
 		using var readLock = readWriteLock.AcquireReadLock();
 		using var accessor = memoryMappedFile.CreateViewAccessor();
-		return accessor.ReadInt32(0);
+		var fileSize = accessor.ReadInt32(0);
+
+		if (logger is not null)
+		{
+			LogReadFileSize(logger, fileSize);
+		}
+
+		return fileSize;
 	}
 
 	/// <summary>
@@ -150,6 +171,11 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 
 		InternalRead(readStream);
 		readStream.Seek(0, SeekOrigin.Begin);
+
+		if (logger is not null)
+		{
+			LogReadFile(logger, readStream.Length);
+		}
 
 		return readData(readStream);
 	}
@@ -170,6 +196,11 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		try
 		{
 			InternalWrite(data);
+
+			if (logger is not null)
+			{
+				LogWroteFile(logger, data.Length);
+			}
 		}
 		finally
 		{
@@ -196,10 +227,20 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 			InternalRead(readStream);
 			readStream.Seek(0, SeekOrigin.Begin);
 
+			if (logger is not null)
+			{
+				LogReadFile(logger, readStream.Length);
+			}
+
 			updateFunc(readStream, writeStream);
 			writeStream.Seek(0, SeekOrigin.Begin);
 
 			InternalWrite(writeStream);
+
+			if (logger is not null)
+			{
+				LogWroteFile(logger, writeStream.Length);
+			}
 		}
 		finally
 		{
@@ -218,7 +259,7 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 
 		while (!disposed)
 		{
-			var result = WaitHandle.WaitAny(waitHandles, TinyReadWriteLock.DefaultWaitTimeout);
+			var result = WaitHandle.WaitAny(waitHandles, TinyIpcOptions.DefaultWaitTimeout);
 
 			// Triggers when disposed
 			if (result == 0 || disposed)
@@ -300,4 +341,13 @@ public class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 
 		return new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
 	}
+
+	[LoggerMessage(0, LogLevel.Trace, "Read file size, memory mapped file was {file_size} bytes")]
+	private static partial void LogReadFileSize(ILogger logger, long file_size);
+
+	[LoggerMessage(1, LogLevel.Trace, "Read {file_size} bytes from memory mapped file")]
+	private static partial void LogReadFile(ILogger logger, long file_size);
+
+	[LoggerMessage(2, LogLevel.Trace, "Wrote {file_size} bytes to memory mapped file")]
+	private static partial void LogWroteFile(ILogger logger, long file_size);
 }
