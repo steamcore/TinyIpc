@@ -17,10 +17,10 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	private readonly Guid instanceId = Guid.NewGuid();
 	private readonly TimeSpan minMessageAge;
 	private readonly ITinyMemoryMappedFile memoryMappedFile;
+	private readonly SemaphoreSlim messageReaderSemaphore = new(1, 1);
 	private readonly Channel<LogEntry> receiverChannel = Channel.CreateUnbounded<LogEntry>();
 	private readonly Task receiverTask;
 
-	private readonly object messageReaderLock = new();
 	private readonly ILogger<TinyMessageBus>? logger;
 	private bool disposed;
 	private long lastEntryId = -1;
@@ -133,13 +133,21 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			receiverChannel.Writer.Complete();
 			receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
 
-			lock (messageReaderLock)
+			if (disposeFile && memoryMappedFile is IDisposable disposableFile)
 			{
-				if (disposeFile && memoryMappedFile is IDisposable disposableFile)
+				messageReaderSemaphore.Wait();
+
+				try
 				{
 					disposableFile.Dispose();
 				}
+				finally
+				{
+					messageReaderSemaphore.Release();
+				}
 			}
+
+			messageReaderSemaphore.Dispose();
 		}
 	}
 
@@ -261,7 +269,9 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		LogBook logBook;
 		long readFrom;
 
-		lock (messageReaderLock)
+		await messageReaderSemaphore.WaitAsync();
+
+		try
 		{
 			Interlocked.Decrement(ref waitingReceivers);
 
@@ -271,19 +281,23 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
 			readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
-		}
 
-		foreach (var entry in logBook.Entries)
-		{
-			if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
-				continue;
-
-			await receiverChannel.Writer.WriteAsync(entry);
-
-			if (logger is not null)
+			foreach (var entry in logBook.Entries)
 			{
-				LogReceivedMessage(logger, entry.Message.Length);
+				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
+					continue;
+
+				await receiverChannel.Writer.WriteAsync(entry);
+
+				if (logger is not null)
+				{
+					LogReceivedMessage(logger, entry.Message.Length);
+				}
 			}
+		}
+		finally
+		{
+			messageReaderSemaphore.Release();
 		}
 	}
 
