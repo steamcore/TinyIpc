@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Channels;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 #if NET
 using System.Runtime.Versioning;
 #endif
+using System.Threading.Channels;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ProtoBuf;
 using TinyIpc.IO;
 

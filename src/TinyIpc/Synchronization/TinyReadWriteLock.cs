@@ -1,3 +1,6 @@
+#if NET
+using System.Runtime.Versioning;
+#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -27,6 +30,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// Initializes a new instance of the TinyReadWriteLock class.
 	/// </summary>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
 	public TinyReadWriteLock(IOptions<TinyIpcOptions> options, ILogger<TinyReadWriteLock> logger)
 		: this(options.Value.Name, options.Value.MaxReaderCount, options.Value.WaitTimeout, logger)
 	{
@@ -36,6 +42,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// Initializes a new instance of the TinyReadWriteLock class.
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
 	public TinyReadWriteLock(string name, ILogger<TinyReadWriteLock>? logger = null)
 		: this(name, TinyIpcOptions.DefaultMaxReaderCount, TinyIpcOptions.DefaultWaitTimeout, logger)
 	{
@@ -46,6 +55,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
 	public TinyReadWriteLock(string name, int maxReaderCount, ILogger<TinyReadWriteLock>? logger = null)
 		: this(name, maxReaderCount, TinyIpcOptions.DefaultWaitTimeout, logger)
 	{
@@ -57,6 +69,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxReaderCount">Maxium simultaneous readers, default is 6</param>
 	/// <param name="waitTimeout">How long to wait before giving up aquiring read and write locks</param>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
 	public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout, ILogger<TinyReadWriteLock>? logger = null)
 	{
 		if (string.IsNullOrWhiteSpace(name))
@@ -256,6 +271,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
 	/// <param name="maxReaderCount">Maximum number of simultaneous readers</param>
 	/// <returns>A system wide Semaphore</returns>
+#if NET
+	[SupportedOSPlatform("windows")]
+#endif
 	public static Semaphore CreateSemaphore(string name, int maxReaderCount)
 	{
 		return new Semaphore(maxReaderCount, maxReaderCount, "TinyReadWriteLock_Semaphore_" + name);

@@ -1,11 +1,11 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 #if NET
 using System.Runtime.Versioning;
 #endif
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using TinyIpc.Synchronization;
 
 namespace TinyIpc.IO;
