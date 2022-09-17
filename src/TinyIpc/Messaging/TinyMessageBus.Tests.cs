@@ -9,7 +9,7 @@ namespace TinyIpc.Messaging;
 public class TinyMessageBusTests
 {
 	[Fact]
-	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other()
+	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_event_handler()
 	{
 		using var messagebus1 = new TinyMessageBus("Example");
 		using var messagebus2 = new TinyMessageBus("Example");
@@ -26,6 +26,35 @@ public class TinyMessageBusTests
 
 		// Disposing the message bus forces the read task to finish
 		messagebus2.Dispose();
+
+		received.ShouldBe("yes");
+	}
+
+	[Fact]
+	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_subscriber()
+	{
+		using var messagebus1 = new TinyMessageBus("Example");
+		using var messagebus2 = new TinyMessageBus("Example");
+
+		var received = "nope";
+
+		var subscribeTask = Task.Run(async () =>
+		{
+			await foreach (var message in messagebus2.SubscribeAsync())
+			{
+				received = Encoding.UTF8.GetString(message.ToArray());
+			}
+		});
+
+		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
+		await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
+		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
+
+		await messagebus2.ReadAsync();
+
+		// Disposing the message bus forces the read task to finish
+		messagebus2.Dispose();
+		await subscribeTask;
 
 		received.ShouldBe("yes");
 	}

@@ -33,4 +33,10 @@ public interface ITinyMessageBus
 	/// </summary>
 	/// <param name="messages"></param>
 	Task PublishAsync(IReadOnlyList<byte[]> messages);
+
+	/// <summary>
+	/// Subscribe to messages using an async enumerable
+	/// </summary>
+	/// <param name="cancellationToken"></param>
+	IAsyncEnumerable<IReadOnlyList<byte>> SubscribeAsync(CancellationToken cancellationToken = default);
 }

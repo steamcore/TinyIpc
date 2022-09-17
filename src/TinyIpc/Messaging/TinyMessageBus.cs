@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Versioning;
 #endif
@@ -18,7 +20,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	private readonly TimeSpan minMessageAge;
 	private readonly ITinyMemoryMappedFile memoryMappedFile;
 	private readonly SemaphoreSlim messageReaderSemaphore = new(1, 1);
-	private readonly Channel<LogEntry> receiverChannel = Channel.CreateUnbounded<LogEntry>();
+	private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> receiverChannels = new();
 	private readonly Task receiverTask;
 
 	private readonly ILogger<TinyMessageBus>? logger;
@@ -130,7 +132,11 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 			disposed = true;
 
-			receiverChannel.Writer.Complete();
+			foreach (var receiverChannel in receiverChannels)
+			{
+				receiverChannel.Value.Writer.Complete();
+			}
+
 			receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
 
 			if (disposeFile && memoryMappedFile is IDisposable disposableFile)
@@ -213,6 +219,30 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		});
 	}
 
+	/// <summary>
+	/// Subscribe to messages using an async enumerable.
+	/// </summary>
+	/// <param name="cancellationToken"></param>
+	public async IAsyncEnumerable<IReadOnlyList<byte>> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+	{
+		var id = Guid.NewGuid();
+		var receiverChannel = Channel.CreateUnbounded<LogEntry>();
+
+		receiverChannels[id] = receiverChannel;
+
+		try
+		{
+			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationToken))
+			{
+				yield return entry.Message;
+			}
+		}
+		finally
+		{
+			receiverChannels.TryRemove(id, out _);
+		}
+	}
+
 	private void PublishMessages(Stream readStream, Stream writeStream, Queue<LogEntry> publishQueue, TimeSpan timeout)
 	{
 		var logBook = DeserializeLogBook(readStream);
@@ -287,7 +317,10 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
 					continue;
 
-				await receiverChannel.Writer.WriteAsync(entry);
+				foreach (var receiverChannel in receiverChannels)
+				{
+					await receiverChannel.Value.Writer.WriteAsync(entry);
+				}
 
 				if (logger is not null)
 				{
@@ -303,9 +336,14 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 	private async Task ReceiverWorker()
 	{
-		while (await receiverChannel.Reader.WaitToReadAsync().ConfigureAwait(false))
+		var id = Guid.NewGuid();
+		var receiverChannel = Channel.CreateUnbounded<LogEntry>();
+
+		receiverChannels[id] = receiverChannel;
+
+		try
 		{
-			while (receiverChannel.Reader.TryRead(out var entry))
+			await foreach (var entry in StreamEntries(receiverChannel.Reader))
 			{
 				Interlocked.Increment(ref messagesReceived);
 
@@ -320,6 +358,21 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 						LogReceiveError(logger, ex, entry.Id);
 					}
 				}
+			}
+		}
+		finally
+		{
+			receiverChannels.TryRemove(id, out _);
+		}
+	}
+
+	private static async IAsyncEnumerable<LogEntry> StreamEntries(ChannelReader<LogEntry> reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+	{
+		while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+		{
+			while (reader.TryRead(out var entry))
+			{
+				yield return entry;
 			}
 		}
 	}
