@@ -1,0 +1,32 @@
+using TinyIpc.DependencyInjection;
+
+namespace GenericHost;
+
+public partial class ReceiverWorker : BackgroundService
+{
+	private readonly ILogger<ReceiverWorker> logger;
+	private readonly ITinyIpcFactory tinyIpcFactory;
+
+	public ReceiverWorker(ITinyIpcFactory tinyIpcFactory, ILogger<ReceiverWorker> logger)
+	{
+		this.logger = logger;
+		this.tinyIpcFactory = tinyIpcFactory;
+	}
+
+	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	{
+		// Create a new instance, can be called multiple times to create multiple instances, remember to dispose
+		using var tinyIpcInstance = tinyIpcFactory.CreateInstance();
+
+		// Subscribe to messages being published
+		await foreach (var message in tinyIpcInstance.MessageBus.SubscribeAsync(stoppingToken))
+		{
+			var workerMessage = WorkerMessage.Deserialize(message);
+
+			LogMessage(workerMessage.ProcessId, workerMessage.Sentence);
+		}
+	}
+
+	[LoggerMessage(1, LogLevel.Information, "Process {pid} says: {sentence}")]
+	private partial void LogMessage(int pid, string sentence);
+}

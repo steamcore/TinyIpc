@@ -22,7 +22,8 @@ var host = Host.CreateDefaultBuilder(args)
 		});
 
 		services.AddTransient<LoremIpsum>();
-		services.AddHostedService<Worker>();
+		services.AddHostedService<ReceiverWorker>();
+		services.AddHostedService<PublishWorker>();
 	})
 	.Build();
 
