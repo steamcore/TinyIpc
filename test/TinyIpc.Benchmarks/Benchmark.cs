@@ -9,8 +9,8 @@ namespace TinyIpc.Benchmarks;
 public class Benchmark : IDisposable
 {
 	private readonly byte[] message = Encoding.UTF8.GetBytes("Lorem ipsum dolor sit amet.");
-	private readonly TinyMessageBus messagebusWithRealFile = new TinyMessageBus("benchmark", TimeSpan.Zero);
-	private readonly TinyMessageBus messagebusWithFakeFile = new TinyMessageBus(new FakeMemoryMappedFile(100_000), true, TimeSpan.Zero);
+	private readonly TinyMessageBus messagebusWithRealFile = new("benchmark", TimeSpan.Zero);
+	private readonly TinyMessageBus messagebusWithFakeFile = new(new FakeMemoryMappedFile(100_000), true, TimeSpan.Zero);
 
 	public void Dispose()
 	{
