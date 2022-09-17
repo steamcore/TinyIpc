@@ -18,15 +18,25 @@ public partial class ReceiverWorker : BackgroundService
 		// Create a new instance, can be called multiple times to create multiple instances, remember to dispose
 		using var tinyIpcInstance = tinyIpcFactory.CreateInstance();
 
-		// Subscribe to messages being published
-		await foreach (var message in tinyIpcInstance.MessageBus.SubscribeAsync(stoppingToken))
+		try
 		{
-			var workerMessage = WorkerMessage.Deserialize(message);
+			// Subscribe to messages being published
+			await foreach (var message in tinyIpcInstance.MessageBus.SubscribeAsync(stoppingToken))
+			{
+				var workerMessage = WorkerMessage.Deserialize(message);
 
-			LogMessage(workerMessage.ProcessId, workerMessage.Sentence);
+				LogMessage(workerMessage.ProcessId, workerMessage.Sentence);
+			}
+		}
+		finally
+		{
+			LogCount(tinyIpcInstance.MessageBus.MessagesReceived);
 		}
 	}
 
 	[LoggerMessage(1, LogLevel.Information, "Process {pid} says: {sentence}")]
 	private partial void LogMessage(int pid, string sentence);
+
+	[LoggerMessage(2, LogLevel.Information, "Received {count} messages")]
+	private partial void LogCount(long count);
 }

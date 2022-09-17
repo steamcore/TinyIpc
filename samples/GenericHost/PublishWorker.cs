@@ -6,11 +6,13 @@ public partial class PublishWorker : BackgroundService
 {
 	private readonly LoremIpsum loremIpsum;
 	private readonly ITinyIpcFactory tinyIpcFactory;
+	private readonly ILogger<PublishWorker> logger;
 
-	public PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIpcFactory)
+	public PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIpcFactory, ILogger<PublishWorker> logger)
 	{
 		this.loremIpsum = loremIpsum;
 		this.tinyIpcFactory = tinyIpcFactory;
+		this.logger = logger;
 	}
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -27,8 +29,8 @@ public partial class PublishWorker : BackgroundService
 
 			while (!stoppingToken.IsCancellationRequested)
 			{
-				// Random delay to make it interesting
-				await Task.Delay(rnd.Next(1_000, 5_000), stoppingToken);
+				// Random delay to make it interesting, comment out the delay to make really make it go
+				await Task.Delay(rnd.Next(1_000, 3_000), stoppingToken);
 
 				// Say nonsense
 				await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage(loremIpsum.GetSentence()));
@@ -39,6 +41,8 @@ public partial class PublishWorker : BackgroundService
 		{
 			// Say goodbye
 			await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("goodbye"));
+
+			LogCount(tinyIpcInstance.MessageBus.MessagesPublished);
 		}
 
 		static IReadOnlyList<byte> SerializeMessage(string sentence)
@@ -46,4 +50,7 @@ public partial class PublishWorker : BackgroundService
 			return new WorkerMessage { ProcessId = Environment.ProcessId, Sentence = sentence }.Serialize();
 		}
 	}
+
+	[LoggerMessage(1, LogLevel.Information, "Published {count} messages")]
+	private partial void LogCount(long count);
 }
