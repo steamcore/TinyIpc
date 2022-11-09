@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Versioning;
@@ -51,7 +50,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// Initializes a new instance of the TinyMessageBus class.
 	/// </summary>
 	/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
@@ -65,7 +63,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </summary>
 	/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 	/// <param name="minMessageAge">The minimum amount of time messages are required to live before removal from the file, default is half a second</param>
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, file is being disposed")]
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif

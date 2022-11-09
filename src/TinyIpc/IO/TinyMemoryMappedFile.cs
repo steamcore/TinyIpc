@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
 #if NET
 using System.Runtime.Versioning;
@@ -58,7 +57,6 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Incorrect warning, lock is being disposed")]
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
