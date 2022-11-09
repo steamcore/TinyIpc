@@ -16,7 +16,7 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>11.0</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" Version="4.1.1" PrivateAssets="All" />
+    <PackageReference Include="Roslynator.Analyzers" Version="4.1.2" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableSourceLink)' == 'true'">

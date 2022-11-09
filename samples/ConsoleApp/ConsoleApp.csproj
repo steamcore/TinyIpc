@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>TinyIpc console example</Description>
     <Authors>Steamcore</Authors>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <AssemblyName>ConsoleApp</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>ConsoleApp</PackageId>
