@@ -1,11 +1,17 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+#if NET
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Versioning;
 #endif
 using System.Threading.Channels;
 using MessagePack;
+#if NET
+using MessagePack.Formatters;
+#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TinyIpc.IO;
@@ -467,4 +473,13 @@ public sealed class LogEntry
 		);
 		Overhead = memoryStream.Length;
 	}
+
+	// Make sure necessary MessagePack types aren't trimmed
+#if NET
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+	private static readonly Type byteFormatter = typeof(InterfaceReadOnlyListFormatter<byte>);
+
+	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+	private static readonly Type logEntryFormatter = typeof(InterfaceReadOnlyListFormatter<LogEntry>);
+#endif
 }
