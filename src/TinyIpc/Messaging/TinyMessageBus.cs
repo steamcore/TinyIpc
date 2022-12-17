@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-#if NET
 using System.Diagnostics.CodeAnalysis;
-#endif
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Versioning;
@@ -59,6 +57,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
+	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMessageBus(string name, ILogger<TinyMessageBus>? logger = null)
 		: this(new TinyMemoryMappedFile(name), disposeFile: true, logger)
 	{
@@ -72,6 +71,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
+	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMessageBus(string name, TimeSpan minMessageAge, ILogger<TinyMessageBus>? logger = null)
 		: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge, logger)
 	{
@@ -477,9 +477,11 @@ public sealed class LogEntry
 	// Make sure necessary MessagePack types aren't trimmed
 #if NET
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
 	private static readonly Type byteFormatter = typeof(InterfaceReadOnlyListFormatter<byte>);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
 	private static readonly Type logEntryFormatter = typeof(InterfaceReadOnlyListFormatter<LogEntry>);
 #endif
 }

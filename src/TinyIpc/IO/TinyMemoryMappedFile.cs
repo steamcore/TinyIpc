@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
 #if NET
 using System.Runtime.Versioning;
@@ -60,6 +61,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
+	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMemoryMappedFile(string name, long maxFileSize, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true, logger)
 	{

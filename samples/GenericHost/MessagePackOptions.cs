@@ -3,7 +3,7 @@ using MessagePack.Resolvers;
 
 namespace GenericHost;
 
-internal class MessagePackOptions
+internal static class MessagePackOptions
 {
 	internal static MessagePackSerializerOptions Instance { get; } =
 		MessagePackSerializerOptions.Standard

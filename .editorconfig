@@ -228,3 +228,7 @@ dotnet_diagnostic.RCS1192.severity = none
 
 # RCS1250: Use implicit/explicit object creation
 dotnet_diagnostic.RCS1250.severity = warning
+
+[Program.cs]
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = none
