@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 #endif
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using MessagePack;
 #if NET
 using MessagePack.Formatters;
@@ -217,6 +218,34 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		});
 	}
 
+	internal static Dictionary<Guid, TaskCompletionSource<object>?> m_tcs = new();
+
+	public Task<object> PublishAsyncWithReturn(IReadOnlyList<byte> messages)
+	{
+		if (disposed)
+			throw new ObjectDisposedException("Can not publish messages when diposed");
+
+		if (messages is null)
+			throw new ArgumentNullException(nameof(messages), "Message list can not be empty");
+
+		var publishQueue = new Queue<LogEntry>(messages.Count);
+		var entry = new LogEntry { Instance = instanceId, Message = messages };
+		publishQueue.Enqueue(entry);
+		TaskCompletionSource<object> taskCompletionSource = new();
+
+		m_tcs[entry.TaskId] = taskCompletionSource;
+
+		memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
+		return taskCompletionSource.Task;
+	}
+
+	internal static void ExpireTaskCompletionSource(Guid? id)
+	{
+		if (id is not Guid task_id)
+			return;
+		m_tcs.Remove(task_id);
+	}
+
 	/// <summary>
 	/// Subscribe to messages using an async enumerable.
 	/// </summary>
@@ -349,7 +378,11 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 				try
 				{
-					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(entry.Message));
+					TinyMessageReceivedEventArgs e = new(entry.Message);
+					if (m_tcs.TryGetValue(entry.TaskId, out var tcs) && tcs is not null)
+						e = new TinyMessageReceivedEventArgs(entry.Message, entry.TaskId, tcs);
+
+					MessageReceived?.Invoke(this, e);
 				}
 				catch (Exception ex)
 				{
@@ -462,6 +495,14 @@ public sealed class LogEntry
 
 	[Key(3)]
 	public IReadOnlyList<byte> Message { get; set; } = Array.Empty<byte>();
+
+	[Key(4)]
+	public Guid TaskId { get; set; }
+
+	public LogEntry()
+	{
+		TaskId = Guid.NewGuid();
+	}
 
 	static LogEntry()
 	{

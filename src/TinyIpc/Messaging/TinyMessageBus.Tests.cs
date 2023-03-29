@@ -129,4 +129,23 @@ public class TinyMessageBusTests
 		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
 		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
 	}
+
+	[Fact]
+	public async Task ReturnValueTest()
+	{
+		using var messagebus1 = new TinyMessageBus("ReturnValueTest");
+		using var messagebus2 = new TinyMessageBus("ReturnValueTest");
+
+		messagebus2.MessageReceived += async (s, e) =>
+		{
+			await Task.Delay(500);
+			var message = Encoding.UTF8.GetString(e.Message.ToArray());
+			e.TrySetResult($"Return from MessageReceived event: {message}");
+		};
+
+		var result = await messagebus1.PublishAsyncWithReturn(Encoding.UTF8.GetBytes("lorem"));
+		result.ShouldBe($"Return from MessageReceived event: lorem");
+
+		TinyMessageBus.m_tcs.Count.ShouldBe(0);
+	}
 }
