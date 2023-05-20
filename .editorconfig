@@ -121,8 +121,8 @@ roslynator_object_creation_type_style = implicit_when_type_is_obvious
 #### Analyzer Rules ####
 
 # <EnableNETAnalyzers>true</EnableNETAnalyzers>
-# <AnalysisMode>AllEnabledByDefault</AnalysisMode>
-# <AnalysisLevel>latest</AnalysisLevel>
+# <AnalysisMode>All</AnalysisMode>
+# <AnalysisLevel>7.0</AnalysisLevel>
 
 # CA1031: Do not catch general exception types
 dotnet_diagnostic.CA1031.severity = none
