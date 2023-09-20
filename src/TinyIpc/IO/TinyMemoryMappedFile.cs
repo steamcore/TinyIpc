@@ -37,7 +37,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	[SupportedOSPlatform("windows")]
 #endif
 	public TinyMemoryMappedFile(ITinyReadWriteLock readWriteLock, IOptions<TinyIpcOptions> options, ILogger<TinyMemoryMappedFile> logger)
-		: this(options.Value.Name, options.Value.MaxFileSize, readWriteLock, disposeLock: false, logger)
+		: this((options ?? throw new ArgumentNullException(nameof(options))).Value.Name, options.Value.MaxFileSize, readWriteLock, disposeLock: false, logger)
 	{
 	}
 
@@ -166,6 +166,9 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <returns>File content</returns>
 	public T Read<T>(Func<MemoryStream, T> readData)
 	{
+		if (readData is null)
+			throw new ArgumentNullException(nameof(readData));
+
 		using var readLock = readWriteLock.AcquireReadLock();
 		using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
 

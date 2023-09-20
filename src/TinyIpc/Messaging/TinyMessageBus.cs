@@ -46,7 +46,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </summary>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
 	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, IOptions<TinyIpcOptions> options, ILogger<TinyMessageBus> logger)
-		: this(memoryMappedFile, false, options.Value.MinMessageAge, logger)
+		: this(memoryMappedFile, false, (options ?? throw new ArgumentNullException(nameof(options))).Value.MinMessageAge, logger)
 	{
 	}
 

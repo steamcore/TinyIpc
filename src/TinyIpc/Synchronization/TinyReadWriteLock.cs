@@ -34,7 +34,7 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	[SupportedOSPlatform("windows")]
 #endif
 	public TinyReadWriteLock(IOptions<TinyIpcOptions> options, ILogger<TinyReadWriteLock> logger)
-		: this(options.Value.Name, options.Value.MaxReaderCount, options.Value.WaitTimeout, logger)
+		: this((options ?? throw new ArgumentNullException(nameof(options))).Value.Name, options.Value.MaxReaderCount, options.Value.WaitTimeout, logger)
 	{
 	}
 

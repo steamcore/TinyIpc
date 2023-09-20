@@ -1,5 +1,8 @@
 root = true
 
+# Steamcore .NET library editorconfig
+# dotnet_library_editorconfig_version = 14
+
 [*]
 charset = utf-8
 insert_final_newline = true
@@ -19,6 +22,7 @@ indent_size = 4
 
 [*.cs]
 indent_style = tab
+indent_size = 4
 
 # Microsoft reference documentation
 # https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-code-style-settings-reference?view=vs-2019
@@ -131,7 +135,7 @@ dotnet_diagnostic.CA1031.severity = none
 dotnet_diagnostic.CA1040.severity = none
 
 # CA1062: Validate arguments of public methods
-dotnet_diagnostic.CA1062.severity = none
+dotnet_diagnostic.CA1062.severity = warning
 
 # CA1303: Do not pass literals as localized parameters
 dotnet_diagnostic.CA1303.severity = none
@@ -153,6 +157,9 @@ dotnet_diagnostic.CA1727.severity = none
 
 # CA2007: Do not directly await a Task
 dotnet_diagnostic.CA2007.severity = none
+
+# CA2229: Implement serialization constructors
+dotnet_diagnostic.CA2229.severity = none
 
 # CA5392: Use DefaultDllImportSearchPaths attribute for P/Invokes
 dotnet_diagnostic.CA5392.severity = none

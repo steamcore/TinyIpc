@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net6.0-windows;net7.0-windows</TargetFrameworks>
-    <NoWarn>CA1707</NoWarn>
+    <NoWarn>CA1062;CA1707</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
