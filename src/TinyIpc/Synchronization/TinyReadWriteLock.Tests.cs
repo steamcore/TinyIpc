@@ -21,7 +21,7 @@ public class TinyReadWriteLockTests
 	}
 
 	[Fact]
-	public void Calling_AcquireReadLock_then_AquireWriteLock_should_wait_for_other_lock()
+	public async Task Calling_AcquireReadLock_then_AquireWriteLock_should_wait_for_other_lock()
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -40,7 +40,7 @@ public class TinyReadWriteLockTests
 
 		readLock1.Dispose();
 
-		writeLockTask.Wait();
+		await writeLockTask;
 
 		readWriteLock1.IsReaderLockHeld.ShouldBeFalse();
 		readWriteLock2.IsWriterLockHeld.ShouldBeTrue();
@@ -49,7 +49,7 @@ public class TinyReadWriteLockTests
 	}
 
 	[Fact]
-	public void Calling_AcquireWriteLock_then_AquireReadLock_should_wait_for_other_lock()
+	public async Task Calling_AcquireWriteLock_then_AquireReadLock_should_wait_for_other_lock()
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -68,7 +68,7 @@ public class TinyReadWriteLockTests
 
 		writeLock1.Dispose();
 
-		readLockTask.Wait();
+		await readLockTask;
 
 		readWriteLock1.IsWriterLockHeld.ShouldBeFalse();
 		readWriteLock2.IsReaderLockHeld.ShouldBeTrue();
