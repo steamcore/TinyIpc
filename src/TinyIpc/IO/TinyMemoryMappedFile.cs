@@ -164,7 +164,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	public T Read<T>(Func<MemoryStream, T> readData)
+	public async ValueTask<T> Read<T>(Func<MemoryStream, ValueTask<T>> readData)
 	{
 #if NET
 		ArgumentNullException.ThrowIfNull(readData);
@@ -184,7 +184,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 			LogReadFile(logger, readStream.Length);
 		}
 
-		return readData(readStream);
+		return await readData(readStream);
 	}
 
 	/// <summary>
@@ -227,7 +227,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
+	public async ValueTask ReadWrite(Func<MemoryStream, MemoryStream, ValueTask> updateFunc)
 	{
 #if NET
 		ArgumentNullException.ThrowIfNull(updateFunc);
@@ -251,7 +251,7 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 				LogReadFile(logger, readStream.Length);
 			}
 
-			updateFunc(readStream, writeStream);
+			await updateFunc(readStream, writeStream);
 			writeStream.Seek(0, SeekOrigin.Begin);
 
 			InternalWrite(writeStream);

@@ -22,7 +22,7 @@ public interface ITinyMemoryMappedFile
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	T Read<T>(Func<MemoryStream, T> readData);
+	ValueTask<T> Read<T>(Func<MemoryStream, ValueTask<T>> readData);
 
 	/// <summary>
 	/// Replaces the content of the memory mapped file with a write lock in place.
@@ -32,5 +32,5 @@ public interface ITinyMemoryMappedFile
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc);
+	ValueTask ReadWrite(Func<MemoryStream, MemoryStream, ValueTask> updateFunc);
 }

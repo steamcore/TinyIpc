@@ -106,11 +106,17 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		this.minMessageAge = minMessageAge;
 		this.logger = logger;
 
-		memoryMappedFile.FileUpdated += WhenFileUpdated;
+		Task.Run(Startup);
+		receiverTask = Task.Run(ReceiverWorker);
 
-		lastEntryId = memoryMappedFile.Read(static stream => DeserializeLogBook(stream).LastId);
+		async Task Startup()
+		{
+			// Immediately read the highest existing message id in the log book so we don't receive old messages
+			lastEntryId = await memoryMappedFile.Read(async static stream => (await DeserializeLogBook(stream)).LastId);
 
-		receiverTask = Task.Run(() => ReceiverWorker());
+			// Then start observing the file for updates
+			memoryMappedFile.FileUpdated += WhenFileUpdated;
+		}
 	}
 
 	public void Dispose()
@@ -225,7 +231,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		{
 			while (publishQueue.Count > 0)
 			{
-				memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
+				await memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
 
 				// Give messages in the published log a chance to expire in case it is full
 				if (publishQueue.Count > 0)
@@ -260,9 +266,9 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 	}
 
-	private void PublishMessages(Stream readStream, Stream writeStream, Queue<LogEntry> publishQueue, TimeSpan timeout)
+	private async ValueTask PublishMessages(Stream readStream, Stream writeStream, Queue<LogEntry> publishQueue, TimeSpan timeout)
 	{
-		var logBook = DeserializeLogBook(readStream);
+		var logBook = await DeserializeLogBook(readStream);
 		logBook.TrimStaleEntries(DateTime.UtcNow - minMessageAge);
 		var logSize = logBook.CalculateLogSize();
 
@@ -293,7 +299,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 
 		// Flush the updated log to the memory mapped file
-		MessagePackSerializer.Serialize(writeStream, logBook, MessagePackOptions.Instance);
+		await MessagePackSerializer.SerializeAsync(writeStream, logBook, MessagePackOptions.Instance).ConfigureAwait(false);
 	}
 
 	internal Task ReadAsync()
@@ -325,7 +331,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			if (disposed)
 				return;
 
-			logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
+			logBook = await memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
 			readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
 
@@ -396,12 +402,12 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 	}
 
-	private static LogBook DeserializeLogBook(Stream stream)
+	private static async ValueTask<LogBook> DeserializeLogBook(Stream stream)
 	{
 		if (stream.Length == 0)
 			return new LogBook();
 
-		return MessagePackSerializer.Deserialize<LogBook>(stream, MessagePackOptions.Instance);
+		return await MessagePackSerializer.DeserializeAsync<LogBook>(stream, MessagePackOptions.Instance).ConfigureAwait(false);
 	}
 
 	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message")]

@@ -61,24 +61,24 @@ internal sealed class FakeMemoryMappedFile(int maxFileSize)
 		return (int)memoryStream.Length;
 	}
 
-	public T Read<T>(Func<MemoryStream, T> readData)
+	public ValueTask<T> Read<T>(Func<MemoryStream, ValueTask<T>> readData)
 	{
 		memoryStream.Seek(0, SeekOrigin.Begin);
 
 		return readData(memoryStream);
 	}
 
-	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
+	public async ValueTask ReadWrite(Func<MemoryStream, MemoryStream, ValueTask> updateFunc)
 	{
 		memoryStream.Seek(0, SeekOrigin.Begin);
 		writeStream.SetLength(0);
 
-		updateFunc(memoryStream, writeStream);
+		await updateFunc(memoryStream, writeStream);
 
 		memoryStream.SetLength(0);
 		writeStream.Seek(0, SeekOrigin.Begin);
 
-		writeStream.CopyTo(memoryStream);
+		await writeStream.CopyToAsync(memoryStream);
 
 		FileUpdated?.Invoke(this, EventArgs.Empty);
 	}

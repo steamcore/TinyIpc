@@ -27,7 +27,7 @@ public class TinyMemoryMappedFileTests
 	[InlineData("")]
 	[InlineData("test")]
 	[InlineData("lorem ipsum dolor sit amet")]
-	public void Write_then_read_returns_what_was_written(string message)
+	public async Task Write_then_read_returns_what_was_written(string message)
 	{
 		using var file = new TinyMemoryMappedFile("Test");
 
@@ -36,7 +36,8 @@ public class TinyMemoryMappedFileTests
 
 		file.Write(dataStream);
 
-		file.Read(stream => stream.ToArray()).ShouldBe(data);
+		var contents = await file.Read(stream => new ValueTask<byte[]>(stream.ToArray()));
+		contents.ShouldBe(data);
 	}
 
 	[Fact]
