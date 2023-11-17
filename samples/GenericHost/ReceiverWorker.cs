@@ -17,7 +17,7 @@ public partial class ReceiverWorker(ITinyIpcFactory tinyIpcFactory, ILogger<Rece
 			// Subscribe to messages being published
 			await foreach (var message in tinyIpcInstance.MessageBus.SubscribeAsync(stoppingToken))
 			{
-				var workerMessage = WorkerMessage.Deserialize(message);
+				var workerMessage = await WorkerMessage.Deserialize(message);
 
 				LogMessage(workerMessage.ProcessId, workerMessage.Sentence);
 			}

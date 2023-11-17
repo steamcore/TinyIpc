@@ -1,29 +1,27 @@
-using MessagePack;
+using MemoryPack;
 
 namespace GenericHost;
 
-[MessagePackObject]
-public class WorkerMessage
+[MemoryPackable]
+public partial class WorkerMessage
 {
-	[Key(1)]
 	public int ProcessId { get; set; }
 
-	[Key(2)]
 	public string Sentence { get; set; } = string.Empty;
 
-	public byte[] Serialize()
+	public async ValueTask<byte[]> Serialize()
 	{
 		using var ms = new MemoryStream();
 
-		MessagePackSerializer.Serialize(ms, this, MessagePackOptions.Instance);
+		await MemoryPackSerializer.SerializeAsync(ms, this);
 
 		return ms.ToArray();
 	}
 
-	public static WorkerMessage Deserialize(IReadOnlyList<byte> data)
+	public static async ValueTask<WorkerMessage> Deserialize(IReadOnlyList<byte> data)
 	{
 		using var ms = new MemoryStream([.. data]);
 
-		return MessagePackSerializer.Deserialize<WorkerMessage>(ms, MessagePackOptions.Instance);
+		return await MemoryPackSerializer.DeserializeAsync<WorkerMessage>(ms) ?? new WorkerMessage();
 	}
 }

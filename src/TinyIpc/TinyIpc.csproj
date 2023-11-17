@@ -4,10 +4,24 @@
     <TargetFrameworks>netstandard2.0;net6.0;net7.0;net8.0</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <MessageSerializer>MessagePack</MessageSerializer>
+    <MessageSerializer Condition=" '$(TargetFramework)' == 'net8.0' ">MemoryPack</MessageSerializer>
+    <DefineConstants Condition=" '$(MessageSerializer)' == 'MemoryPack' ">$(DefineConstants);USE_MEMORYPACK</DefineConstants>
+    <DefineConstants Condition=" '$(MessageSerializer)' == 'MessagePack' ">$(DefineConstants);USE_MESSAGEPACK</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="TinyIpc.Tests" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(MessageSerializer)' == 'MemoryPack' ">
+    <Compile Remove="**/*.MessagePack.cs" />
+    <None Include="**/*.MessagePack.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(MessageSerializer)' == 'MessagePack' ">
+    <Compile Remove="**/*.MemoryPack.cs" />
+    <None Include="**/*.MemoryPack.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,7 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MessagePack" />
+    <PackageReference Include="MemoryPack" Condition=" '$(MessageSerializer)' == 'MemoryPack' " />
+    <PackageReference Include="MessagePack" Condition=" '$(MessageSerializer)' == 'MessagePack' " />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
@@ -26,8 +41,8 @@
     <PackageReference Include="System.Threading.Channels" />
   </ItemGroup>
 
-  <Target Name="GenerateMessagePack" BeforeTargets="CoreCompile" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)\MessagePack.Generated.cs">
-    <Exec Command="dotnet mpc -input $(MSBuildProjectDirectory) -output $(IntermediateOutputPath)\MessagePack.Generated.cs -resolverName TinyIpcGeneratedResolver" />
+  <Target Name="GenerateMessagePack" BeforeTargets="CoreCompile" Inputs="@(Compile)" Outputs="$(IntermediateOutputPath)\MessagePack.Generated.cs" Condition=" '$(MessageSerializer)' == 'MessagePack' ">
+    <Exec Command="dotnet mpc -input $(MSBuildProjectDirectory) -output $(IntermediateOutputPath)\MessagePack.Generated.cs -resolverName TinyIpcGeneratedResolver -conditionalsymbol USE_MESSAGEPACK" />
     <ItemGroup>
       <Compile Remove="$(IntermediateOutputPath)\MessagePack.Generated.cs" />
       <Compile Include="$(IntermediateOutputPath)\MessagePack.Generated.cs" />

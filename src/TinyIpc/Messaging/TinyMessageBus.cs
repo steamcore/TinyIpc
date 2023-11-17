@@ -6,9 +6,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 #endif
 using System.Threading.Channels;
+#if USE_MEMORYPACK
+using MemoryPack;
+#elif USE_MESSAGEPACK
 using MessagePack;
-#if NET
-using MessagePack.Formatters;
 #endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,6 +41,13 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 	public long MessagesPublished => messagesPublished;
 	public long MessagesReceived => messagesReceived;
+
+#if USE_MEMORYPACK
+	static TinyMessageBus()
+	{
+		MemoryPackFormatterProvider.Register<LogBook>();
+	}
+#endif
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMessageBus class.
@@ -299,7 +307,11 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 
 		// Flush the updated log to the memory mapped file
+#if USE_MEMORYPACK
+		await MemoryPackSerializer.SerializeAsync(writeStream, logBook).ConfigureAwait(false);
+#elif USE_MESSAGEPACK
 		await MessagePackSerializer.SerializeAsync(writeStream, logBook, MessagePackOptions.Instance).ConfigureAwait(false);
+#endif
 	}
 
 	internal Task ReadAsync()
@@ -407,7 +419,11 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		if (stream.Length == 0)
 			return new LogBook();
 
+#if USE_MEMORYPACK
+		return await MemoryPackSerializer.DeserializeAsync<LogBook>(stream).ConfigureAwait(false) ?? new LogBook();
+#elif USE_MESSAGEPACK
 		return await MessagePackSerializer.DeserializeAsync<LogBook>(stream, MessagePackOptions.Instance).ConfigureAwait(false);
+#endif
 	}
 
 	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message")]
@@ -420,13 +436,22 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	private static partial void LogReceiveError(ILogger logger, Exception exception, long id);
 }
 
+#if USE_MEMORYPACK
+[MemoryPackable]
+public sealed partial class LogBook
+#elif USE_MESSAGEPACK
 [MessagePackObject]
 public sealed class LogBook
+#endif
 {
+#if USE_MESSAGEPACK
 	[Key(0)]
+#endif
 	public long LastId { get; set; }
 
+#if USE_MESSAGEPACK
 	[Key(1)]
+#endif
 	public IReadOnlyList<LogEntry> Entries { get; set; } = Array.Empty<LogEntry>();
 
 	public void AddEntry(LogEntry entry)
@@ -469,46 +494,4 @@ public sealed class LogBook
 
 		entries.RemoveRange(0, i);
 	}
-}
-
-[MessagePackObject]
-public sealed class LogEntry
-{
-	public static long Overhead { get; }
-
-	[Key(0)]
-	public long Id { get; set; }
-
-	[Key(1)]
-	public Guid Instance { get; set; }
-
-	[Key(2)]
-	public DateTime Timestamp { get; set; }
-
-	[Key(3)]
-	public IReadOnlyList<byte> Message { get; set; } = Array.Empty<byte>();
-
-	static LogEntry()
-	{
-		using var memoryStream = MemoryStreamPool.Manager.GetStream(nameof(LogEntry));
-		MessagePackSerializer.Serialize(
-			memoryStream,
-			new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow },
-			MessagePackOptions.Instance
-		);
-		Overhead = memoryStream.Length;
-	}
-
-	// Make sure necessary MessagePack types aren't trimmed
-#if NET
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
-	[SuppressMessage("Roslynator", "RCS1213:Remove unused member declaration.", Justification = "Unused on purpose")]
-	private static readonly Type byteFormatter = typeof(InterfaceReadOnlyListFormatter<byte>);
-
-	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
-	[SuppressMessage("Roslynator", "RCS1213:Remove unused member declaration.", Justification = "Unused on purpose")]
-	private static readonly Type logEntryFormatter = typeof(InterfaceReadOnlyListFormatter<LogEntry>);
-#endif
 }

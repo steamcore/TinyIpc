@@ -13,7 +13,7 @@ public partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIp
 		using var tinyIpcInstance = tinyIpcFactory.CreateInstance();
 
 		// Say hello
-		await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("hello"));
+		await PublishMessage(tinyIpcInstance, "hello");
 
 		try
 		{
@@ -25,21 +25,30 @@ public partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIp
 				await Task.Delay(rnd.Next(1_000, 3_000), stoppingToken);
 
 				// Say nonsense
-				await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage(loremIpsum.GetSentence()));
+				await PublishMessage(tinyIpcInstance, loremIpsum.GetSentence());
 			}
 
 		}
 		finally
 		{
 			// Say goodbye
-			await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("goodbye"));
+			await PublishMessage(tinyIpcInstance, "goodbye");
 
 			LogCount(tinyIpcInstance.MessageBus.MessagesPublished);
 		}
 
-		static IReadOnlyList<byte> SerializeMessage(string sentence)
+		static async ValueTask PublishMessage(ITinyIpcInstance tinyIpcInstance, string message)
 		{
-			return new WorkerMessage { ProcessId = Environment.ProcessId, Sentence = sentence }.Serialize();
+			var serializedMessage = await SerializeMessage(message);
+
+			await tinyIpcInstance.MessageBus.PublishAsync(serializedMessage);
+		}
+
+		static async ValueTask<IReadOnlyList<byte>> SerializeMessage(string sentence)
+		{
+			var message = new WorkerMessage { ProcessId = Environment.ProcessId, Sentence = sentence };
+
+			return await message.Serialize();
 		}
 	}
 
