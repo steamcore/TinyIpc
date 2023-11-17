@@ -2,16 +2,10 @@ using TinyIpc.DependencyInjection;
 
 namespace GenericHost;
 
-public partial class ReceiverWorker : BackgroundService
+public partial class ReceiverWorker(ITinyIpcFactory tinyIpcFactory, ILogger<ReceiverWorker> logger)
+	: BackgroundService
 {
-	private readonly ILogger<ReceiverWorker> logger;
-	private readonly ITinyIpcFactory tinyIpcFactory;
-
-	public ReceiverWorker(ITinyIpcFactory tinyIpcFactory, ILogger<ReceiverWorker> logger)
-	{
-		this.logger = logger;
-		this.tinyIpcFactory = tinyIpcFactory;
-	}
+	private readonly ILogger<ReceiverWorker> logger = logger;
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{

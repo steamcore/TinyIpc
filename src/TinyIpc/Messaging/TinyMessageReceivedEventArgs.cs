@@ -1,11 +1,7 @@
 namespace TinyIpc.Messaging;
 
-public class TinyMessageReceivedEventArgs : EventArgs
+public class TinyMessageReceivedEventArgs(IReadOnlyList<byte> message)
+	: EventArgs
 {
-	public IReadOnlyList<byte> Message { get; }
-
-	public TinyMessageReceivedEventArgs(IReadOnlyList<byte> message)
-	{
-		Message = message;
-	}
+	public IReadOnlyList<byte> Message { get; } = message;
 }

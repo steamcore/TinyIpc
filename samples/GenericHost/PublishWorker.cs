@@ -2,18 +2,10 @@ using TinyIpc.DependencyInjection;
 
 namespace GenericHost;
 
-public partial class PublishWorker : BackgroundService
+public partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIpcFactory, ILogger<PublishWorker> logger)
+	: BackgroundService
 {
-	private readonly LoremIpsum loremIpsum;
-	private readonly ITinyIpcFactory tinyIpcFactory;
-	private readonly ILogger<PublishWorker> logger;
-
-	public PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIpcFactory, ILogger<PublishWorker> logger)
-	{
-		this.loremIpsum = loremIpsum;
-		this.tinyIpcFactory = tinyIpcFactory;
-		this.logger = logger;
-	}
+	private readonly ILogger<PublishWorker> logger = logger;
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{

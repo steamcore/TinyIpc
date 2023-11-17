@@ -40,22 +40,15 @@ public class Benchmark : IDisposable
 	}
 }
 
-internal sealed class FakeMemoryMappedFile : ITinyMemoryMappedFile, IDisposable
+internal sealed class FakeMemoryMappedFile(int maxFileSize)
+	: ITinyMemoryMappedFile, IDisposable
 {
-	private readonly MemoryStream memoryStream;
-	private readonly MemoryStream writeStream;
+	private readonly MemoryStream memoryStream = new(maxFileSize);
+	private readonly MemoryStream writeStream = new(maxFileSize);
 
-	public long MaxFileSize { get; }
+	public long MaxFileSize { get; } = maxFileSize;
 
 	public event EventHandler? FileUpdated;
-
-	public FakeMemoryMappedFile(int maxFileSize)
-	{
-		MaxFileSize = maxFileSize;
-
-		memoryStream = new MemoryStream(maxFileSize);
-		writeStream = new MemoryStream(maxFileSize);
-	}
 
 	public void Dispose()
 	{

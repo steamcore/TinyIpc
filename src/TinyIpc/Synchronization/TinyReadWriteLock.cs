@@ -148,8 +148,12 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <returns>A disposable that releases the read lock</returns>
 	public IDisposable AcquireReadLock()
 	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
 		if (disposed)
 			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+#endif
 
 		if (!synchronizationLock.Wait(waitTimeout))
 			throw new TimeoutException("Could not acquire read lock, timed out waiting for SemaphoreSlim");
@@ -199,8 +203,12 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	/// <returns>A disposable that releases the write lock</returns>
 	public IDisposable AcquireWriteLock()
 	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
 		if (disposed)
 			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+#endif
 
 		if (!synchronizationLock.Wait(waitTimeout))
 			throw new TimeoutException("Could not acquire write lock, timed out waiting for SemaphoreSlim");
@@ -291,16 +299,9 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	[LoggerMessage(3, LogLevel.Trace, "Released write lock")]
 	private static partial void LogReleasedWriteLock(ILogger logger);
 
-	private class SynchronizationDisposable : IDisposable
+	private class SynchronizationDisposable(Action action) : IDisposable
 	{
-		private readonly Action action;
-
 		private bool disposed;
-
-		public SynchronizationDisposable(Action action)
-		{
-			this.action = action;
-		}
 
 		public void Dispose()
 		{

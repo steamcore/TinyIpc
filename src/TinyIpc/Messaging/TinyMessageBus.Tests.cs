@@ -83,7 +83,7 @@ public class TinyMessageBusTests
 		// Add a new bus to the mix
 		using var messagebus3 = new TinyMessageBus("Example");
 
-		buses = new[] { messagebus1, messagebus2, messagebus3 };
+		buses = [messagebus1, messagebus2, messagebus3];
 
 		for (var i = 0; i < secondRound; i++)
 		{

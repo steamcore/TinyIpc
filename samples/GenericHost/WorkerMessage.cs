@@ -22,7 +22,7 @@ public class WorkerMessage
 
 	public static WorkerMessage Deserialize(IReadOnlyList<byte> data)
 	{
-		using var ms = new MemoryStream(data.ToArray());
+		using var ms = new MemoryStream([.. data]);
 
 		return MessagePackSerializer.Deserialize<WorkerMessage>(ms, MessagePackOptions.Instance);
 	}

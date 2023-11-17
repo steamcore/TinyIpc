@@ -1,14 +1,14 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 14
+# dotnet_library_editorconfig_version = 15
 
 [*]
 charset = utf-8
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.{csproj,props,targets}]
+[*.{config,csproj,props,targets}]
 indent_style = space
 indent_size = 2
 
@@ -176,6 +176,9 @@ dotnet_diagnostic.IDE0007.severity = suggestion
 # IDE0008: Use explicit type instead of 'var'
 dotnet_diagnostic.IDE0008.severity = none
 
+# IDE0028: Use collection initializers
+dotnet_diagnostic.IDE0028.severity = warning
+
 # IDE0035: Remove unreachable code
 dotnet_diagnostic.IDE0035.severity = warning
 
@@ -190,6 +193,15 @@ dotnet_diagnostic.IDE0079.severity = warning
 
 # IDE0080: Remove unnecessary suppression operator
 dotnet_diagnostic.IDE0080.severity = warning
+
+# IDE0300: Collection initialization can be simplified
+dotnet_diagnostic.IDE0300.severity = warning
+
+# IDE0301: Collection initialization can be simplified
+dotnet_diagnostic.IDE0301.severity = warning
+
+# IDE0305: Collection initialization can be simplified
+dotnet_diagnostic.IDE0305.severity = warning
 
 # RCS1018: Add default access modifier
 dotnet_diagnostic.RCS1018.severity = warning

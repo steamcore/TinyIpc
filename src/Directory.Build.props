@@ -15,7 +15,7 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>11.0</LangVersion>
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -24,21 +24,13 @@
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <AnalysisMode>All</AnalysisMode>
-    <AnalysisLevel>7.0</AnalysisLevel>
+    <AnalysisLevel>8.0</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="CLSCompliantAttribute">
       <_Parameter1>false</_Parameter1>
     </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Roslynator.Analyzers" Version="4.6.0" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(EnableSourceLink)' == 'true'">
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

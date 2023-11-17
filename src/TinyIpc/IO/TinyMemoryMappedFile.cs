@@ -166,8 +166,12 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// <returns>File content</returns>
 	public T Read<T>(Func<MemoryStream, T> readData)
 	{
+#if NET
+		ArgumentNullException.ThrowIfNull(readData);
+#else
 		if (readData is null)
 			throw new ArgumentNullException(nameof(readData));
+#endif
 
 		using var readLock = readWriteLock.AcquireReadLock();
 		using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
@@ -188,11 +192,19 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// </summary>
 	public void Write(MemoryStream data)
 	{
+#if NET
+		ArgumentNullException.ThrowIfNull(data);
+#else
 		if (data is null)
 			throw new ArgumentNullException(nameof(data));
+#endif
 
+#if NET8_0_OR_GREATER
+		ArgumentOutOfRangeException.ThrowIfGreaterThan(data.Length, MaxFileSize);
+#else
 		if (data.Length > MaxFileSize)
 			throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
+#endif
 
 		using var writeLock = readWriteLock.AcquireWriteLock();
 
@@ -217,8 +229,12 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 	/// </summary>
 	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
 	{
+#if NET
+		ArgumentNullException.ThrowIfNull(updateFunc);
+#else
 		if (updateFunc is null)
 			throw new ArgumentNullException(nameof(updateFunc));
+#endif
 
 		using var writeLock = readWriteLock.AcquireWriteLock();
 

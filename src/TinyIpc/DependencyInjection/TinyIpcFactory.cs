@@ -12,17 +12,8 @@ public interface ITinyIpcFactory
 	ITinyIpcInstance CreateInstance(string name);
 }
 
-public sealed class TinyIpcFactory : ITinyIpcFactory
+public sealed class TinyIpcFactory(IOptionsMonitor<TinyIpcOptions> optionsMonitor, ILoggerFactory loggerFactory) : ITinyIpcFactory
 {
-	private readonly IOptionsMonitor<TinyIpcOptions> optionsMonitor;
-	private readonly ILoggerFactory loggerFactory;
-
-	public TinyIpcFactory(IOptionsMonitor<TinyIpcOptions> optionsMonitor, ILoggerFactory loggerFactory)
-	{
-		this.optionsMonitor = optionsMonitor;
-		this.loggerFactory = loggerFactory;
-	}
-
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif

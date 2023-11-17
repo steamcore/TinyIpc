@@ -170,11 +170,26 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// <param name="message"></param>
 	public Task PublishAsync(IReadOnlyList<byte> message)
 	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
 		if (disposed)
 			throw new ObjectDisposedException("Can not publish messages when diposed");
+#endif
 
-		if (message is null || message.Count == 0)
-			throw new ArgumentException("Message can not be empty", nameof(message));
+#if NET
+		ArgumentNullException.ThrowIfNull(message);
+#else
+		if (message is null)
+			throw new ArgumentNullException(nameof(message), "Message can not be empty");
+#endif
+
+#if NET8_0_OR_GREATER
+		ArgumentOutOfRangeException.ThrowIfZero(message.Count);
+#else
+		if (message.Count == 0)
+			throw new ArgumentOutOfRangeException(nameof(message), "Message can not be empty");
+#endif
 
 		return PublishAsync(new[] { message });
 	}
@@ -185,8 +200,12 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// <param name="messages"></param>
 	public Task PublishAsync(IReadOnlyList<IReadOnlyList<byte>> messages)
 	{
+#if NET7_0_OR_GREATER
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
 		if (disposed)
 			throw new ObjectDisposedException("Can not publish messages when diposed");
+#endif
 
 		if (messages is null)
 			throw new ArgumentNullException(nameof(messages), "Message list can not be empty");
@@ -408,7 +427,7 @@ public sealed class LogBook
 	{
 		if (Entries is not List<LogEntry> entries)
 		{
-			entries = Entries.ToList();
+			entries = [.. Entries];
 
 			Entries = entries;
 		}
@@ -437,7 +456,7 @@ public sealed class LogBook
 
 		if (Entries is not List<LogEntry> entries)
 		{
-			entries = Entries.ToList();
+			entries = [.. Entries];
 
 			Entries = entries;
 		}
@@ -478,10 +497,12 @@ public sealed class LogEntry
 #if NET
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
+	[SuppressMessage("Roslynator", "RCS1213:Remove unused member declaration.", Justification = "Unused on purpose")]
 	private static readonly Type byteFormatter = typeof(InterfaceReadOnlyListFormatter<byte>);
 
 	[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
 	[SuppressMessage("Performance", "CA1823:Avoid unused private fields", Justification = "Unused on purpose")]
+	[SuppressMessage("Roslynator", "RCS1213:Remove unused member declaration.", Justification = "Unused on purpose")]
 	private static readonly Type logEntryFormatter = typeof(InterfaceReadOnlyListFormatter<LogEntry>);
 #endif
 }
