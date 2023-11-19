@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="MessagePack" Version="2.5.140" />
+    <PackageVersion Include="MessagePack" Version="2.6.100-alpha" />
+    <PackageVersion Include="MessagePack.SourceGenerator" Version="2.6.100-alpha" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="8.0.0" />
