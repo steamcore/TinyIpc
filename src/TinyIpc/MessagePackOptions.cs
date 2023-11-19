@@ -1,5 +1,6 @@
 using MessagePack;
 using MessagePack.Resolvers;
+using TinyIpc.Messaging;
 
 namespace TinyIpc;
 
@@ -9,7 +10,7 @@ internal static class MessagePackOptions
 		MessagePackSerializerOptions.Standard
 			.WithResolver(
 				CompositeResolver.Create(
-					TinyIpcGeneratedResolver.Instance,
+					LogBookResolver.Instance,
 					StandardResolver.Instance
 				)
 			);

@@ -2,6 +2,9 @@ using MessagePack;
 
 namespace GenericHost;
 
+[GeneratedMessagePackResolver]
+public partial class MessageResolver;
+
 [MessagePackObject]
 public class WorkerMessage
 {
