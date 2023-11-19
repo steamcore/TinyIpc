@@ -9,6 +9,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageVersion Include="MessagePack" Version="3.0.300" />
+    <PackageVersion Include="MessagePackAnalyzer" Version="3.0.300" />
     <PackageVersion Include="TinyLogger" Version="3.0.0" />
   </ItemGroup>
 

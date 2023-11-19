@@ -521,11 +521,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	{
 		if (stream.Length == 0)
 		{
-#if NET
 			return new LogBook(0, []);
-#else
-			return new LogBook(0, ImmutableList<LogEntry>.Empty);
-#endif
 		}
 
 		return MessagePackSerializer.Deserialize<LogBook>(stream, MessagePackOptions.Instance);
@@ -540,6 +536,9 @@ public partial class TinyMessageBus : ITinyMessageBus
 	[LoggerMessage(2, LogLevel.Error, "Event handler failed handling message with id {id}, media type {media_type}")]
 	private static partial void LogReceiveError(ILogger logger, Exception exception, long id, string? media_type);
 }
+
+[GeneratedMessagePackResolver]
+public partial class LogBookResolver;
 
 [MessagePackObject]
 public readonly record struct LogBook(

@@ -9,7 +9,7 @@ internal static class MessagePackOptions
 		MessagePackSerializerOptions.Standard
 			.WithResolver(
 				CompositeResolver.Create(
-					GenericHostGeneratedResolver.Instance,
+					MessageResolver.Instance,
 					StandardResolver.Instance
 				)
 			);
