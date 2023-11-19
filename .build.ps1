@@ -13,31 +13,25 @@ task AssertVersion {
     }
 }
 
-task DotnetToolRestore {
-    exec {
-        dotnet tool restore
-    }
-}
-
 task DotnetRestore {
     exec {
         dotnet restore
     }
 }
 
-task DotnetFormat DotnetToolRestore, DotnetRestore, {
+task DotnetFormat DotnetRestore, {
     exec {
         dotnet format --no-restore
     }
 }
 
-task DotnetFormatCheck DotnetToolRestore, DotnetRestore, {
+task DotnetFormatCheck DotnetRestore, {
     exec {
         dotnet format --no-restore --verify-no-changes
     }
 }
 
-task DotnetBuild DotnetToolRestore, DotnetRestore, {
+task DotnetBuild DotnetRestore, {
     exec {
         dotnet build --no-restore
     }

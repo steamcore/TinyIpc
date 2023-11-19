@@ -521,11 +521,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	{
 		if (stream.Length == 0)
 		{
-#if NET
 			return new LogBook(0, []);
-#else
-			return new LogBook(0, ImmutableList<LogEntry>.Empty);
-#endif
 		}
 
 		return MessagePackSerializer.Deserialize<LogBook>(stream, MessagePackOptions.Instance);
