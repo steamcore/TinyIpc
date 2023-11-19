@@ -5,6 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageVersion Include="MessagePack" Version="3.0.54-alpha" />
+    <PackageVersion Include="MessagePackAnalyzer" Version="3.0.54-alpha" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="TinyLogger" Version="2.0.0" />

@@ -428,6 +428,9 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	private static partial void LogReceiveError(ILogger logger, Exception exception, long id);
 }
 
+[GeneratedMessagePackResolver]
+public partial class LogBookResolver;
+
 [MessagePackObject]
 public sealed class LogBook
 {
