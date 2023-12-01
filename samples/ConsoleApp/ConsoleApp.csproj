@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>TinyIpc console example</Description>
-    <Authors>Steamcore</Authors>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <AssemblyName>ConsoleApp</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>ConsoleApp</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
