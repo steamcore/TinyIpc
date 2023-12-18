@@ -493,7 +493,7 @@ public sealed class LogEntry
 	{
 		using var memoryStream = MemoryStreamPool.Manager.GetStream(nameof(LogEntry));
 		MessagePackSerializer.Serialize(
-			memoryStream,
+			(MemoryStream)memoryStream,
 			new LogEntry { Id = long.MaxValue, Instance = Guid.Empty, Timestamp = DateTime.UtcNow },
 			MessagePackOptions.Instance
 		);

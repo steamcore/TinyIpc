@@ -9,12 +9,12 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Options" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
+    <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.0" />
     <PackageVersion Include="System.Threading.Channels" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <GlobalPackageReference Include="Roslynator.Analyzers" Version="4.6.4" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
