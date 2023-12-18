@@ -18,6 +18,7 @@ namespace TinyIpc.Messaging;
 
 public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 {
+	private readonly CancellationTokenSource cancellationTokenSource = new();
 	private readonly bool disposeFile;
 	private readonly Guid instanceId = Guid.NewGuid();
 	private readonly TimeSpan minMessageAge;
@@ -110,7 +111,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		lastEntryId = memoryMappedFile.Read(static stream => DeserializeLogBook(stream).LastId);
 
-		receiverTask = Task.Run(() => ReceiverWorker());
+		receiverTask = Task.Run(ReceiverWorker, cancellationTokenSource.Token);
 	}
 
 	public void Dispose()
@@ -127,6 +128,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		if (disposing)
 		{
 			memoryMappedFile.FileUpdated -= WhenFileUpdated;
+			cancellationTokenSource.Cancel();
 
 			disposed = true;
 
@@ -152,6 +154,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			}
 
 			messageReaderSemaphore.Dispose();
+			cancellationTokenSource.Dispose();
 		}
 	}
 
@@ -362,7 +365,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		try
 		{
-			await foreach (var entry in StreamEntries(receiverChannel.Reader))
+			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationTokenSource.Token))
 			{
 				Interlocked.Increment(ref messagesReceived);
 
@@ -378,6 +381,10 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 					}
 				}
 			}
+		}
+		catch (OperationCanceledException)
+		{
+			// Expected
 		}
 		finally
 		{
