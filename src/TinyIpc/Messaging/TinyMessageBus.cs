@@ -233,7 +233,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 				// Give messages in the published log a chance to expire in case it is full
 				if (publishQueue.Count > 0)
 				{
-					await Task.Delay(50);
+					await Task.Delay(50).ConfigureAwait(false);
 				}
 			}
 		});
@@ -252,7 +252,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		try
 		{
-			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationToken))
+			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationToken).ConfigureAwait(false))
 			{
 				yield return entry.Message;
 			}
@@ -319,7 +319,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		LogBook logBook;
 		long readFrom;
 
-		await messageReaderSemaphore.WaitAsync();
+		await messageReaderSemaphore.WaitAsync().ConfigureAwait(false);
 
 		try
 		{
@@ -341,7 +341,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 				foreach (var receiverChannel in receiverChannels)
 				{
-					await receiverChannel.Value.Writer.WriteAsync(entry);
+					await receiverChannel.Value.Writer.WriteAsync(entry).ConfigureAwait(false);
 				}
 
 				if (logger is not null)
@@ -365,7 +365,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		try
 		{
-			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationTokenSource.Token))
+			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationTokenSource.Token).ConfigureAwait(false))
 			{
 				Interlocked.Increment(ref messagesReceived);
 
