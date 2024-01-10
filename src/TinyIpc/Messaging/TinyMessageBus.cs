@@ -428,7 +428,7 @@ public sealed class LogBook
 	public long LastId { get; set; }
 
 	[Key(1)]
-	public IReadOnlyList<LogEntry> Entries { get; set; } = Array.Empty<LogEntry>();
+	public IReadOnlyList<LogEntry> Entries { get; set; } = [];
 
 	public void AddEntry(LogEntry entry)
 	{
@@ -487,7 +487,7 @@ public sealed class LogEntry
 	public DateTime Timestamp { get; set; }
 
 	[Key(3)]
-	public IReadOnlyList<byte> Message { get; set; } = Array.Empty<byte>();
+	public IReadOnlyList<byte> Message { get; set; } = [];
 
 	static LogEntry()
 	{
