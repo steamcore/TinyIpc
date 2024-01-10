@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 15
+# dotnet_library_editorconfig_version = 16
 
 [*]
 charset = utf-8
@@ -120,7 +120,12 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 #### Roslynator Options ####
 
 roslynator_accessibility_modifiers = explicit
+
+# Prefer explicit/implicit object creation
 roslynator_object_creation_type_style = implicit_when_type_is_obvious
+
+# Use collection expression for array/collection creation
+roslynator_use_collection_expression = true
 
 #### Analyzer Rules ####
 
@@ -246,7 +251,7 @@ dotnet_diagnostic.RCS1174.severity = warning
 dotnet_diagnostic.RCS1192.severity = none
 
 # RCS1250: Use implicit/explicit object creation
-dotnet_diagnostic.RCS1250.severity = warning
+dotnet_diagnostic.RCS1250.severity = none
 
 [Program.cs]
 # CA1852: Seal internal types
