@@ -128,5 +128,7 @@ public class TinyMessageBusTests
 		using var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true);
 		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
 		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
+
+		messageBus.MessagesPublished.ShouldBe(2);
 	}
 }

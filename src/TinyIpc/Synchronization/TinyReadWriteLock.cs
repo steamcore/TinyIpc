@@ -299,7 +299,7 @@ public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
 	[LoggerMessage(3, LogLevel.Trace, "Released write lock")]
 	private static partial void LogReleasedWriteLock(ILogger logger);
 
-	private class SynchronizationDisposable(Action action) : IDisposable
+	private sealed class SynchronizationDisposable(Action action) : IDisposable
 	{
 		private bool disposed;
 
