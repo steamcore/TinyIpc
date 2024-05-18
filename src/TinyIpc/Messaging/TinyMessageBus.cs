@@ -137,7 +137,14 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 				receiverChannel.Value.Writer.Complete();
 			}
 
-			receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
+			try
+			{
+				receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
+			}
+			catch (TaskCanceledException)
+			{
+				// Expected
+			}
 
 			if (disposeFile && memoryMappedFile is IDisposable disposableFile)
 			{
