@@ -22,7 +22,7 @@
 
   <PropertyGroup>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <EnableAOTAnalyzer Condition=" '$(TargetFramework)' != 'netstandard2.0' ">true</EnableAOTAnalyzer>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <AnalysisMode>All</AnalysisMode>
     <AnalysisLevel>8.0</AnalysisLevel>

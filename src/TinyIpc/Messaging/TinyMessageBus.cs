@@ -173,7 +173,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// <param name="message"></param>
 	public Task PublishAsync(IReadOnlyList<byte> message)
 	{
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
@@ -203,7 +203,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// <param name="messages"></param>
 	public Task PublishAsync(IReadOnlyList<IReadOnlyList<byte>> messages)
 	{
-#if NET7_0_OR_GREATER
+#if NET8_0_OR_GREATER
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
