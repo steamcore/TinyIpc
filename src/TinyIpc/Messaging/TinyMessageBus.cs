@@ -316,6 +316,9 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		_ = ReceiveMessages();
 	}
 
+	/// <summary>
+	/// Receives messages from the memory mapped file and forwards them to the registered receiver channels.
+	/// </summary>
 	private async Task ReceiveMessages()
 	{
 		if (waitingReceivers > 0 || disposed)
@@ -363,6 +366,9 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 		}
 	}
 
+	/// <summary>
+	/// Worker task that processes messages from the receiver channels and invokes the MessageReceived event.
+	/// </summary>
 	private async Task ReceiverWorker()
 	{
 		var id = Guid.NewGuid();
