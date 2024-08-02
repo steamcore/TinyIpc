@@ -39,8 +39,8 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </summary>
 	public event EventHandler<TinyMessageReceivedEventArgs>? MessageReceived;
 
-	public long MessagesPublished => messagesPublished;
-	public long MessagesReceived => messagesReceived;
+	public long MessagesPublished => Interlocked.Read(ref messagesPublished);
+	public long MessagesReceived => Interlocked.Read(ref messagesReceived);
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMessageBus class.
@@ -170,8 +170,8 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </summary>
 	public void ResetMetrics()
 	{
-		messagesPublished = 0;
-		messagesReceived = 0;
+		Interlocked.Exchange(ref messagesPublished, 0);
+		Interlocked.Exchange(ref messagesReceived, 0);
 	}
 
 	/// <summary>
