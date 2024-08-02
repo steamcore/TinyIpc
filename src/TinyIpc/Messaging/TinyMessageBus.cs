@@ -32,7 +32,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	private long lastEntryId = -1;
 	private long messagesPublished;
 	private long messagesReceived;
-	private int waitingReceivers;
 
 	/// <summary>
 	/// Called whenever a new message is received
@@ -321,10 +320,8 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 	/// </summary>
 	private async Task ReceiveMessages()
 	{
-		if (waitingReceivers > 0 || disposed)
+		if (disposed)
 			return;
-
-		Interlocked.Increment(ref waitingReceivers);
 
 		LogBook logBook;
 		long readFrom;
@@ -333,8 +330,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 
 		try
 		{
-			Interlocked.Decrement(ref waitingReceivers);
-
 			if (disposed)
 				return;
 
