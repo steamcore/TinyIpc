@@ -200,7 +200,7 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 			throw new ArgumentOutOfRangeException(nameof(message), "Message can not be empty");
 #endif
 
-		return PublishAsync(new[] { message });
+		return PublishAsync([message]);
 	}
 
 	/// <summary>

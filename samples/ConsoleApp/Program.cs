@@ -8,7 +8,7 @@ using var messagebus2 = new TinyMessageBus("Example");
 Console.WriteLine("Type something and press enter. Ctrl+C to quit.");
 
 messagebus1.MessageReceived +=
-	(sender, e) => Console.WriteLine("Received: " + Encoding.UTF8.GetString(e.Message.ToArray()));
+	(sender, e) => Console.WriteLine("Received: " + Encoding.UTF8.GetString([.. e.Message]));
 
 while (true)
 {

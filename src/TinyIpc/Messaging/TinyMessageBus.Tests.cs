@@ -16,7 +16,7 @@ public class TinyMessageBusTests
 
 		var received = "nope";
 
-		messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString(e.Message.ToArray());
+		messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString([.. e.Message]);
 
 		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
 		await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
@@ -42,7 +42,7 @@ public class TinyMessageBusTests
 		{
 			await foreach (var message in messagebus2.SubscribeAsync())
 			{
-				received = Encoding.UTF8.GetString(message.ToArray());
+				received = Encoding.UTF8.GetString([.. message]);
 			}
 		});
 
