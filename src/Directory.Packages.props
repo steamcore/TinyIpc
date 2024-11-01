@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <GlobalPackageReference Include="Roslynator.Analyzers" Version="4.12.8" />
+    <GlobalPackageReference Include="Roslynator.Analyzers" Version="4.12.9" />
   </ItemGroup>
 
 </Project>
