@@ -235,7 +235,12 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 			while (publishQueue.Count > 0)
 			{
-				memoryMappedFile.ReadWrite((readStream, writeStream) => PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100)));
+				memoryMappedFile.ReadWrite((readStream, writeStream) =>
+				{
+					var publishCount = PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100));
+
+					Interlocked.Add(ref messagesPublished, publishCount);
+				});
 
 				// Give messages in the published log a chance to expire in case it is full
 				if (publishQueue.Count > 0)
@@ -270,7 +275,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		}
 	}
 
-	private void PublishMessages(Stream readStream, Stream writeStream, Queue<BinaryData> publishQueue, TimeSpan timeout)
+	private int PublishMessages(Stream readStream, Stream writeStream, Queue<BinaryData> publishQueue, TimeSpan timeout)
 	{
 		var logBook = DeserializeLogBook(readStream);
 		var lastId = logBook.LastId;
@@ -281,6 +286,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		// Start slot timer after deserializing log so deserialization doesn't starve the slot time
 		var slotTimer = Stopwatch.StartNew();
 		var batchTime = timeProvider.GetTimestamp();
+		var publishCount = 0;
 
 		// Try to exhaust the publish queue but don't keep a write lock forever
 		while (publishQueue.Count > 0 && slotTimer.Elapsed < timeout)
@@ -305,12 +311,13 @@ public partial class TinyMessageBus : ITinyMessageBus
 			});
 
 			logSize += LogEntry.Overhead + message.Length;
-
-			Interlocked.Increment(ref messagesPublished);
+			publishCount++;
 		}
 
 		// Flush the updated log to the memory mapped file
 		MessagePackSerializer.Serialize(writeStream, new LogBook(lastId, entries), MessagePackOptions.Instance);
+
+		return publishCount;
 	}
 
 	internal Task ReadAsync()
@@ -347,6 +354,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 			logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
 			readFrom = lastEntryId;
 			lastEntryId = logBook.LastId;
+			var readCount = 0;
 
 			for (var i = 0; i < logBook.Entries.Count; i++)
 			{
@@ -355,7 +363,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
 					continue;
 
-				Interlocked.Increment(ref messagesReceived);
+				readCount++;
 
 				foreach (var receiverChannel in receiverChannels)
 				{
@@ -367,6 +375,8 @@ public partial class TinyMessageBus : ITinyMessageBus
 					LogReceivedMessage(logger, entry.Message.Length);
 				}
 			}
+
+			Interlocked.Add(ref messagesReceived, readCount);
 		}
 		finally
 		{
