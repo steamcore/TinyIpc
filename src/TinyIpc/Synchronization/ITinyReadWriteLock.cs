@@ -1,6 +1,6 @@
 namespace TinyIpc.Synchronization;
 
-public interface ITinyReadWriteLock
+public interface ITinyReadWriteLock : IDisposable
 {
 	/// <summary>
 	/// Is true if a read lock is being held

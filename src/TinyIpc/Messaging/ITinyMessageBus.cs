@@ -1,6 +1,6 @@
 namespace TinyIpc.Messaging;
 
-public interface ITinyMessageBus
+public interface ITinyMessageBus : IDisposable
 {
 	/// <summary>
 	/// Called whenever a new message is received

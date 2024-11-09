@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.IO.MemoryMappedFiles;
 #if NET
 using System.Runtime.Versioning;
@@ -13,7 +12,7 @@ namespace TinyIpc.IO;
 /// <summary>
 /// Wraps a MemoryMappedFile with inter process synchronization and signaling
 /// </summary>
-public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
+public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 {
 	private readonly Task fileWatcherTask;
 	private readonly MemoryMappedFile memoryMappedFile;
@@ -61,7 +60,6 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMemoryMappedFile(string name, long maxFileSize, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true, logger)
 	{
@@ -130,9 +128,9 @@ public partial class TinyMemoryMappedFile : IDisposable, ITinyMemoryMappedFile
 		{
 			memoryMappedFile.Dispose();
 
-			if (disposeLock && readWriteLock is IDisposable disposableLock)
+			if (disposeLock)
 			{
-				disposableLock.Dispose();
+				readWriteLock.Dispose();
 			}
 
 			fileWaitHandle.Dispose();

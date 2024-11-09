@@ -16,7 +16,7 @@ using TinyIpc.IO;
 
 namespace TinyIpc.Messaging;
 
-public partial class TinyMessageBus : IDisposable, ITinyMessageBus
+public partial class TinyMessageBus : ITinyMessageBus
 {
 	private readonly CancellationTokenSource cancellationTokenSource = new();
 	private readonly bool disposeFile;
@@ -57,7 +57,6 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMessageBus(string name, ILogger<TinyMessageBus>? logger = null)
 		: this(new TinyMemoryMappedFile(name), disposeFile: true, logger)
 	{
@@ -71,9 +70,8 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 #if NET
 	[SupportedOSPlatform("windows")]
 #endif
-	[SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False positive")]
 	public TinyMessageBus(string name, TimeSpan minMessageAge, ILogger<TinyMessageBus>? logger = null)
-		: this(new TinyMemoryMappedFile(name), disposeFile: true, minMessageAge, logger)
+		: this(new TinyMemoryMappedFile(name), disposeFile: true, TimeProvider.System, minMessageAge, logger)
 	{
 	}
 
@@ -145,13 +143,13 @@ public partial class TinyMessageBus : IDisposable, ITinyMessageBus
 				// Expected
 			}
 
-			if (disposeFile && memoryMappedFile is IDisposable disposableFile)
+			if (disposeFile)
 			{
 				messageReaderSemaphore.Wait();
 
 				try
 				{
-					disposableFile.Dispose();
+					memoryMappedFile.Dispose();
 				}
 				finally
 				{

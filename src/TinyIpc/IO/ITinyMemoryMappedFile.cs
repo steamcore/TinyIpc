@@ -1,6 +1,6 @@
 namespace TinyIpc.IO;
 
-public interface ITinyMemoryMappedFile
+public interface ITinyMemoryMappedFile : IDisposable
 {
 	/// <summary>
 	/// Called whenever the file is written to

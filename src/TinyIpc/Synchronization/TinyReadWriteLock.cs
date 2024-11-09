@@ -10,7 +10,7 @@ namespace TinyIpc.Synchronization;
 /// Implements a simple inter process read/write locking mechanism
 /// Inspired by http://www.joecheng.com/blog/entries/Writinganinter-processRea.html
 /// </summary>
-public partial class TinyReadWriteLock : IDisposable, ITinyReadWriteLock
+public partial class TinyReadWriteLock : ITinyReadWriteLock
 {
 	private readonly Mutex mutex;
 	private readonly Semaphore semaphore;
