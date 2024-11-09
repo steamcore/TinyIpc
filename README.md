@@ -11,7 +11,7 @@ Intended for quick broadcast messaging in Windows desktop applications, it just 
 
 * Designed to be serverless
 * Clients may drop in and out at any time
-* Messages expire after a specified timeout, default 500 milliseconds
+* Messages expire after a specified timeout, default 1 second
 * The log is kept small for performance, default max log size is 1 MB
 * Reads are queued and should be received in the same order as they were published
 

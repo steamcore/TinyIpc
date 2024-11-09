@@ -57,7 +57,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	/// <param name="memoryMappedFile">
 	/// An instance of a ITinyMemoryMappedFile that will be used to transmit messages.
-	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per half second.
+	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per MinMessageAge in the options.
 	/// </param>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
 	public TinyMessageBus(ITinyMemoryMappedFile memoryMappedFile, IOptions<TinyIpcOptions>? options = null, ILogger<TinyMessageBus>? logger = null)
@@ -70,7 +70,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	/// <param name="memoryMappedFile">
 	/// An instance of a ITinyMemoryMappedFile that will be used to transmit messages.
-	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per half second.
+	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per MinMessageAge in the options.
 	/// </param>
 	/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
@@ -84,7 +84,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	/// <param name="memoryMappedFile">
 	/// An instance of a ITinyMemoryMappedFile that will be used to transmit messages.
-	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per minMessageAge.
+	/// The file should be larger than the size of all messages that can be expected to be transmitted, including message overhead, per MinMessageAge in the options.
 	/// </param>
 	/// <param name="disposeFile">Set to true if the file is to be disposed when this instance is disposed</param>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>

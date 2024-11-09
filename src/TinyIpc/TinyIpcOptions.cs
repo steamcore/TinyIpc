@@ -7,7 +7,7 @@ public class TinyIpcOptions
 	public const int DefaultMaxFileSize = 1024 * 1024;
 	public const int DefaultMaxReaderCount = 6;
 
-	public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(500);
+	public static readonly TimeSpan DefaultMinMessageAge = TimeSpan.FromMilliseconds(1_000);
 	public static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromSeconds(5);
 
 	/// <summary>
@@ -26,7 +26,7 @@ public class TinyIpcOptions
 	public int MaxReaderCount { get; set; } = DefaultMaxReaderCount;
 
 	/// <summary>
-	/// The minimum amount of time messages are required to live before removal from the file, default is half a second
+	/// The minimum amount of time messages are required to live before removal from the file, default is 1 second
 	/// </summary>
 	public TimeSpan MinMessageAge { get; set; } = DefaultMinMessageAge;
 
