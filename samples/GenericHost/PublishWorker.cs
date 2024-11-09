@@ -37,7 +37,7 @@ public partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIp
 			LogCount(tinyIpcInstance.MessageBus.MessagesPublished);
 		}
 
-		static IReadOnlyList<byte> SerializeMessage(string sentence)
+		static BinaryData SerializeMessage(string sentence)
 		{
 			return new WorkerMessage { ProcessId = Environment.ProcessId, Sentence = sentence }.Serialize();
 		}

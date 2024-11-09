@@ -11,18 +11,20 @@ public class WorkerMessage
 	[Key(2)]
 	public string Sentence { get; set; } = string.Empty;
 
-	public byte[] Serialize()
+	public BinaryData Serialize()
 	{
 		using var ms = new MemoryStream();
 
 		MessagePackSerializer.Serialize(ms, this, MessagePackOptions.Instance);
 
-		return ms.ToArray();
+		return BinaryData.FromBytes(ms.ToArray());
 	}
 
-	public static WorkerMessage Deserialize(IReadOnlyList<byte> data)
+	public static WorkerMessage Deserialize(BinaryData data)
 	{
-		using var ms = new MemoryStream([.. data]);
+		ArgumentNullException.ThrowIfNull(data);
+
+		using var ms = data.ToStream();
 
 		return MessagePackSerializer.Deserialize<WorkerMessage>(ms, MessagePackOptions.Instance);
 	}

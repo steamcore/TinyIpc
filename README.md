@@ -55,12 +55,12 @@ using var messagebus1 = new TinyMessageBus("ExampleChannel");
 using var messagebus2 = new TinyMessageBus("ExampleChannel");
 
 messagebus2.MessageReceived +=
-	(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
+	(sender, e) => Console.WriteLine(e.Message.ToString());
 
 while (true)
 {
 	var message = Console.ReadLine();
-	await messagebus1.PublishAsync(Encoding.UTF8.GetBytes(message));
+	await messagebus1.PublishAsync(BinaryData.FromString(message));
 }
 ```
 ## Example using generic hosting
@@ -80,11 +80,11 @@ using var tinyIpcInstance1 = tinyIpcFactory.CreateInstance();
 using var tinyIpcInstance2 = tinyIpcFactory.CreateInstance();
 
 tinyIpcInstance2.MessageBus.MessageReceived +=
-	(sender, e) => Console.WriteLine(Encoding.UTF8.GetString(e.Message));
+	(sender, e) => Console.WriteLine(e.Message.ToString());
 
 while (true)
 {
 	var message = Console.ReadLine();
-	await tinyIpcInstance1.MessageBus.PublishAsync(Encoding.UTF8.GetBytes(message));
+	await tinyIpcInstance1.MessageBus.PublishAsync(BinaryData.FromString(message));
 }
 ```

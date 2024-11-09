@@ -1,5 +1,5 @@
-using System.Text;
 using BenchmarkDotNet.Attributes;
+using Microsoft.Extensions.Options;
 using TinyIpc.IO;
 using TinyIpc.Messaging;
 
@@ -9,9 +9,11 @@ namespace TinyIpc.Benchmarks;
 [ShortRunJob]
 public class Benchmark : IDisposable
 {
-	private readonly byte[] message = Encoding.UTF8.GetBytes("Lorem ipsum dolor sit amet.");
-	private readonly TinyMessageBus messagebusWithRealFile = new("benchmark", TimeSpan.Zero);
-	private readonly TinyMessageBus messagebusWithFakeFile = new(new FakeMemoryMappedFile(100_000), true, TimeSpan.Zero);
+	private static readonly IOptions<TinyIpcOptions> options = new OptionsWrapper<TinyIpcOptions>(new TinyIpcOptions { MinMessageAge = TimeSpan.Zero });
+
+	private readonly BinaryData message = BinaryData.FromString("Lorem ipsum dolor sit amet.");
+	private readonly TinyMessageBus messagebusWithRealFile = new("benchmark", options);
+	private readonly TinyMessageBus messagebusWithFakeFile = new(new FakeMemoryMappedFile(100_000), disposeFile: true, options);
 
 	public void Dispose()
 	{

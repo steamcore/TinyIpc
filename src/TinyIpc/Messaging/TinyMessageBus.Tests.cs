@@ -1,4 +1,3 @@
-using System.Text;
 using Shouldly;
 using TinyIpc.IO;
 using TinyIpc.Synchronization;
@@ -16,11 +15,11 @@ public class TinyMessageBusTests
 
 		var received = "nope";
 
-		messagebus2.MessageReceived += (sender, e) => received = Encoding.UTF8.GetString([.. e.Message]);
+		messagebus2.MessageReceived += (sender, e) => received = e.Message.ToString();
 
-		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
-		await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
-		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"));
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"));
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"));
 
 		await messagebus2.ReadAsync();
 
@@ -42,13 +41,13 @@ public class TinyMessageBusTests
 		{
 			await foreach (var message in messagebus2.SubscribeAsync())
 			{
-				received = Encoding.UTF8.GetString([.. message]);
+				received = message.ToString();
 			}
 		});
 
-		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
-		await messagebus2.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
-		await messagebus1.PublishAsync(Encoding.UTF8.GetBytes("yes"));
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"));
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"));
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"));
 
 		await messagebus2.ReadAsync();
 
@@ -76,7 +75,7 @@ public class TinyMessageBusTests
 
 		for (var i = 0; i < firstRound; i++)
 		{
-			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray()).ToList();
+			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
 			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 		}
 
@@ -87,7 +86,7 @@ public class TinyMessageBusTests
 
 		for (var i = 0; i < secondRound; i++)
 		{
-			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => Guid.NewGuid().ToByteArray()).ToList();
+			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
 			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
 		}
 
@@ -126,8 +125,8 @@ public class TinyMessageBusTests
 		using var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
 
 		using var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true);
-		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("lorem"));
-		await messageBus.PublishAsync(Encoding.UTF8.GetBytes("ipsum"));
+		await messageBus.PublishAsync(BinaryData.FromString("lorem"));
+		await messageBus.PublishAsync(BinaryData.FromString("ipsum"));
 
 		messageBus.MessagesPublished.ShouldBe(2);
 	}
