@@ -6,6 +6,7 @@ using TinyIpc.Messaging;
 namespace TinyIpc.Benchmarks;
 
 [MemoryDiagnoser]
+[ShortRunJob]
 public class Benchmark : IDisposable
 {
 	private readonly byte[] message = Encoding.UTF8.GetBytes("Lorem ipsum dolor sit amet.");
