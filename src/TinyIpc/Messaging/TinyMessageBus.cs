@@ -112,7 +112,9 @@ public partial class TinyMessageBus : ITinyMessageBus
 	protected virtual void Dispose(bool disposing)
 	{
 		if (disposed)
+		{
 			return;
+		}
 
 		if (disposing)
 		{
@@ -176,21 +178,27 @@ public partial class TinyMessageBus : ITinyMessageBus
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
+		{
 			throw new ObjectDisposedException("Can not publish messages when diposed");
+		}
 #endif
 
 #if NET
 		ArgumentNullException.ThrowIfNull(message);
 #else
 		if (message is null)
+		{
 			throw new ArgumentNullException(nameof(message), "Message can not be empty");
+		}
 #endif
 
 #if NET
 		ArgumentOutOfRangeException.ThrowIfZero(message.Length);
 #else
 		if (message.Length == 0)
+		{
 			throw new ArgumentOutOfRangeException(nameof(message), "Message can not be empty");
+		}
 #endif
 
 		return PublishAsync([message]);
@@ -206,14 +214,18 @@ public partial class TinyMessageBus : ITinyMessageBus
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
+		{
 			throw new ObjectDisposedException("Can not publish messages when diposed");
+		}
 #endif
 
 #if NET
 		ArgumentNullException.ThrowIfNull(messages);
 #else
 		if (messages is null)
+		{
 			throw new ArgumentNullException(nameof(messages), "Message list can not be null");
+		}
 #endif
 
 		if (messages.Count == 0)
@@ -293,14 +305,18 @@ public partial class TinyMessageBus : ITinyMessageBus
 		{
 			// Check if the next message will fit in the log
 			if (logSize + LogEntry.Overhead + publishQueue.Peek().Length > memoryMappedFile.MaxFileSize)
+			{
 				break;
+			}
 
 			// Write the entry to the log
 			var message = publishQueue.Dequeue();
 
 			// Skip empty messages though, they would be skipped on the receiving end anyway
 			if (message.Length == 0)
+			{
 				continue;
+			}
 
 			entries = entries.Add(new()
 			{
@@ -336,7 +352,9 @@ public partial class TinyMessageBus : ITinyMessageBus
 	private async Task ReceiveMessages()
 	{
 		if (disposed)
+		{
 			return;
+		}
 
 		LogBook logBook;
 		long readFrom;
@@ -349,7 +367,9 @@ public partial class TinyMessageBus : ITinyMessageBus
 		try
 		{
 			if (disposed)
+			{
 				return;
+			}
 
 			logBook = memoryMappedFile.Read(static stream => DeserializeLogBook(stream));
 			readFrom = lastEntryId;
@@ -361,7 +381,9 @@ public partial class TinyMessageBus : ITinyMessageBus
 				var entry = logBook.Entries[i];
 
 				if (entry.Id <= readFrom || entry.Instance == instanceId || entry.Message.Length == 0)
+				{
 					continue;
+				}
 
 				readCount++;
 
@@ -478,7 +500,9 @@ public readonly record struct LogBook(
 		ArgumentNullException.ThrowIfNull(timeProvider);
 #else
 		if (timeProvider is null)
+		{
 			throw new ArgumentNullException(nameof(timeProvider));
+		}
 #endif
 
 		if (Entries.Count == 0)
@@ -492,7 +516,9 @@ public readonly record struct LogBook(
 		for (; i < Entries.Count; i++)
 		{
 			if (Entries[i].Timestamp >= cutoffPoint)
+			{
 				break;
+			}
 		}
 
 		return i;

@@ -14,7 +14,9 @@ while (true)
 	var message = Console.ReadLine();
 
 	if (string.IsNullOrWhiteSpace(message))
+	{
 		return;
+	}
 
 	await messagebus2.PublishAsync(BinaryData.FromString(message));
 }

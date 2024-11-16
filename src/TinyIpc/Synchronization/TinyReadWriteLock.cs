@@ -75,10 +75,14 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	public TinyReadWriteLock(string name, int maxReaderCount, TimeSpan waitTimeout, ILogger<TinyReadWriteLock>? logger = null)
 	{
 		if (string.IsNullOrWhiteSpace(name))
+		{
 			throw new ArgumentException("Lock must be named", nameof(name));
+		}
 
 		if (maxReaderCount <= 0)
+		{
 			throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
+		}
 
 		this.maxReaderCount = maxReaderCount;
 		this.waitTimeout = waitTimeout;
@@ -98,7 +102,9 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	public TinyReadWriteLock(Mutex mutex, Semaphore semaphore, int maxReaderCount, TimeSpan waitTimeout, ILogger<TinyReadWriteLock>? logger = null)
 	{
 		if (maxReaderCount <= 0)
+		{
 			throw new ArgumentOutOfRangeException(nameof(maxReaderCount), "Need at least one reader");
+		}
 
 		this.maxReaderCount = maxReaderCount;
 		this.waitTimeout = waitTimeout;
@@ -121,7 +127,9 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	protected virtual void Dispose(bool disposing)
 	{
 		if (disposed)
+		{
 			return;
+		}
 
 		if (disposing)
 		{
@@ -130,7 +138,9 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 			// them and prevent some other thread to release them or it might break other
 			// processes as the locks may be held indefinitely.
 			if (!synchronizationLock.Wait(waitTimeout))
+			{
 				throw new TimeoutException("Could not dispose of locks, timed out waiting for SemaphoreSlim");
+			}
 		}
 
 		disposed = true;
@@ -152,11 +162,15 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
+		{
 			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+		}
 #endif
 
 		if (!synchronizationLock.Wait(waitTimeout))
+		{
 			throw new TimeoutException("Could not acquire read lock, timed out waiting for SemaphoreSlim");
+		}
 
 		if (!mutex.WaitOne(waitTimeout))
 		{
@@ -207,11 +221,15 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
+		{
 			throw new ObjectDisposedException(nameof(TinyReadWriteLock));
+		}
 #endif
 
 		if (!synchronizationLock.Wait(waitTimeout))
+		{
 			throw new TimeoutException("Could not acquire write lock, timed out waiting for SemaphoreSlim");
+		}
 
 		if (!mutex.WaitOne(waitTimeout))
 		{
@@ -306,7 +324,9 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		public void Dispose()
 		{
 			if (disposed)
+			{
 				return;
+			}
 
 			disposed = true;
 

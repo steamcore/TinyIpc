@@ -117,7 +117,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	protected virtual void Dispose(bool disposing)
 	{
 		if (disposed)
+		{
 			return;
+		}
 
 		// Always set the dispose wait handle even when dispised  by the finalizer
 		// otherwize the file watcher task will needleessly have to wait for its timeout.
@@ -168,7 +170,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		ArgumentNullException.ThrowIfNull(readData);
 #else
 		if (readData is null)
+		{
 			throw new ArgumentNullException(nameof(readData));
+		}
 #endif
 
 		using var readLock = readWriteLock.AcquireReadLock();
@@ -194,14 +198,18 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		ArgumentNullException.ThrowIfNull(data);
 #else
 		if (data is null)
+		{
 			throw new ArgumentNullException(nameof(data));
+		}
 #endif
 
 #if NET
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(data.Length, MaxFileSize);
 #else
 		if (data.Length > MaxFileSize)
+		{
 			throw new ArgumentOutOfRangeException(nameof(data), "Length greater than max file size");
+		}
 #endif
 
 		using var writeLock = readWriteLock.AcquireWriteLock();
@@ -231,7 +239,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		ArgumentNullException.ThrowIfNull(updateFunc);
 #else
 		if (updateFunc is null)
+		{
 			throw new ArgumentNullException(nameof(updateFunc));
+		}
 #endif
 
 		using var writeLock = readWriteLock.AcquireWriteLock();
@@ -280,11 +290,15 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 
 			// Triggers when disposed
 			if (result == 0 || disposed)
+			{
 				return;
+			}
 
 			// Triggers when the file is changed
 			if (result == 1)
+			{
 				FileUpdated?.Invoke(this, EventArgs.Empty);
+			}
 		}
 	}
 
@@ -308,7 +322,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	private void InternalWrite(MemoryStream input)
 	{
 		if (input.Length > MaxFileSize)
+		{
 			throw new ArgumentOutOfRangeException(nameof(input), "Length greater than max file size");
+		}
 
 		var length = (int)input.Length;
 		var buffer = ArrayPool<byte>.Shared.Rent(length);
@@ -338,10 +354,14 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
 	{
 		if (string.IsNullOrWhiteSpace(name))
+		{
 			throw new ArgumentException("File must be named", nameof(name));
+		}
 
 		if (maxFileSize <= 0)
+		{
 			throw new ArgumentException("Max file size can not be less than 1 byte", nameof(maxFileSize));
+		}
 
 		return MemoryMappedFile.CreateOrOpen("TinyMemoryMappedFile_MemoryMappedFile_" + name, maxFileSize + sizeof(int));
 	}
@@ -354,7 +374,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	public static EventWaitHandle CreateEventWaitHandle(string name)
 	{
 		if (string.IsNullOrWhiteSpace(name))
+		{
 			throw new ArgumentException("EventWaitHandle must be named", nameof(name));
+		}
 
 		return new EventWaitHandle(false, EventResetMode.ManualReset, "TinyMemoryMappedFile_WaitHandle_" + name);
 	}
