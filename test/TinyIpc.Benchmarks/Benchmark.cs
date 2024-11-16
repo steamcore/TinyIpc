@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Options;
 using TinyIpc.IO;
@@ -7,6 +8,7 @@ namespace TinyIpc.Benchmarks;
 
 [MemoryDiagnoser]
 [ShortRunJob]
+[SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "BenchmarkDotNet")]
 public class Benchmark : IDisposable
 {
 	private static readonly IOptions<TinyIpcOptions> options = new OptionsWrapper<TinyIpcOptions>(new TinyIpcOptions { MinMessageAge = TimeSpan.Zero });

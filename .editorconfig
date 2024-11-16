@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 16
+# dotnet_library_editorconfig_version = 17
 
 [*]
 charset = utf-8
@@ -96,6 +96,9 @@ csharp_style_pattern_local_over_anonymous_function = true:warning
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace:warning
 
+# Use 'System.Threading.Lock'
+csharp_prefer_system_threading_lock = true
+
 #### C# Formatting Rules ####
 
 # Wrapping preferences
@@ -131,7 +134,7 @@ roslynator_use_collection_expression = true
 
 # <EnableNETAnalyzers>true</EnableNETAnalyzers>
 # <AnalysisMode>All</AnalysisMode>
-# <AnalysisLevel>7.0</AnalysisLevel>
+# <AnalysisLevel>9.0</AnalysisLevel>
 
 # CA1031: Do not catch general exception types
 dotnet_diagnostic.CA1031.severity = none
@@ -160,14 +163,14 @@ dotnet_diagnostic.CA1716.severity = none
 # CA1727: Use PascalCase for named placeholders
 dotnet_diagnostic.CA1727.severity = none
 
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = warning
+
 # CA2007: Do not directly await a Task
 dotnet_diagnostic.CA2007.severity = none
 
 # CA2229: Implement serialization constructors
 dotnet_diagnostic.CA2229.severity = none
-
-# CA5392: Use DefaultDllImportSearchPaths attribute for P/Invokes
-dotnet_diagnostic.CA5392.severity = none
 
 # CA5394: Do not use insecure randomness
 dotnet_diagnostic.CA5394.severity = none
@@ -181,11 +184,20 @@ dotnet_diagnostic.IDE0007.severity = suggestion
 # IDE0008: Use explicit type instead of 'var'
 dotnet_diagnostic.IDE0008.severity = none
 
+# IDE0010: Add missing cases
+dotnet_diagnostic.IDE0010.severity = none
+
+# IDE0022: Use expression body for methods
+dotnet_diagnostic.IDE0022.severity = none
+
 # IDE0028: Use collection initializers
 dotnet_diagnostic.IDE0028.severity = warning
 
 # IDE0035: Remove unreachable code
 dotnet_diagnostic.IDE0035.severity = warning
+
+# IDE0046: Convert to conditional expression
+dotnet_diagnostic.IDE0046.severity = none
 
 # IDE0051: Remove unused private member
 dotnet_diagnostic.IDE0051.severity = warning
@@ -193,11 +205,20 @@ dotnet_diagnostic.IDE0051.severity = warning
 # IDE0052: Remove unread private member
 dotnet_diagnostic.IDE0052.severity = warning
 
+# IDE0058: Remove unnecessary expression value
+dotnet_diagnostic.IDE0058.severity = none
+
+# IDE0072: Add missing cases
+dotnet_diagnostic.IDE0072.severity = none
+
 # IDE0079: Remove unnecessary suppression
-dotnet_diagnostic.IDE0079.severity = warning
+dotnet_diagnostic.IDE0079.severity = none
 
 # IDE0080: Remove unnecessary suppression operator
 dotnet_diagnostic.IDE0080.severity = warning
+
+# IDE0130: Namespace does not match folder structure
+dotnet_diagnostic.IDE0130.severity = warning
 
 # IDE0300: Collection initialization can be simplified
 dotnet_diagnostic.IDE0300.severity = warning
@@ -207,6 +228,9 @@ dotnet_diagnostic.IDE0301.severity = warning
 
 # IDE0305: Collection initialization can be simplified
 dotnet_diagnostic.IDE0305.severity = warning
+
+# IDE0330: Use 'System.Threading.Lock'
+dotnet_diagnostic.IDE0330.severity = warning
 
 # RCS1018: Add default access modifier
 dotnet_diagnostic.RCS1018.severity = warning
@@ -252,6 +276,33 @@ dotnet_diagnostic.RCS1192.severity = none
 
 # RCS1250: Use implicit/explicit object creation
 dotnet_diagnostic.RCS1250.severity = none
+
+[*.Tests.cs]
+# CA1054: URI-like parameters should not be strings
+dotnet_diagnostic.CA1054.severity = none
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = none
+
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
+# CA1707: Identifiers should not contain underscores
+dotnet_diagnostic.CA1707.severity = none
+
+# CA2234: Pass system uri objects instead of strings
+dotnet_diagnostic.CA2234.severity = none
+
+# xUnit1041: Test class constructors which indicate fixture data must have a source for those fixtures
+dotnet_diagnostic.xUnit1041.severity = none
+
+[*Configuration.cs]
+# IDE0130: Namespace does not match folder structure
+dotnet_diagnostic.IDE0130.severity = none
+
+[*Extensions.cs]
+# IDE0130: Namespace does not match folder structure
+dotnet_diagnostic.IDE0130.severity = none
 
 [Program.cs]
 # CA1852: Seal internal types

@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net481;net8.0-windows</TargetFrameworks>
-    <NoWarn>CA1062;CA1707</NoWarn>
+    <TargetFrameworks>net481;net8.0-windows;net9.0-windows</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +9,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit" />

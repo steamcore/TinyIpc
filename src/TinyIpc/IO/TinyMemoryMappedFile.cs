@@ -100,7 +100,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 
 		disposeWaitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
 
-		fileWatcherTask = Task.Run(() => FileWatcher());
+		fileWatcherTask = Task.Run(FileWatcher);
 	}
 
 	~TinyMemoryMappedFile()
