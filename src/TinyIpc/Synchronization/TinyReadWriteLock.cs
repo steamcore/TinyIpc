@@ -148,7 +148,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	/// <returns>A disposable that releases the read lock</returns>
 	public IDisposable AcquireReadLock()
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
@@ -203,7 +203,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	/// <returns>A disposable that releases the write lock</returns>
 	public IDisposable AcquireWriteLock()
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)

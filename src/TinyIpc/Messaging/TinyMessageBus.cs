@@ -172,7 +172,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="message"></param>
 	public Task PublishAsync(BinaryData message)
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
@@ -186,7 +186,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 			throw new ArgumentNullException(nameof(message), "Message can not be empty");
 #endif
 
-#if NET8_0_OR_GREATER
+#if NET
 		ArgumentOutOfRangeException.ThrowIfZero(message.Length);
 #else
 		if (message.Length == 0)
@@ -202,7 +202,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="messages"></param>
 	public Task PublishAsync(IReadOnlyList<BinaryData> messages)
 	{
-#if NET8_0_OR_GREATER
+#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
 #else
 		if (disposed)
@@ -436,7 +436,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	{
 		if (stream.Length == 0)
 		{
-#if NET8_0_OR_GREATER
+#if NET
 			return new LogBook(0, []);
 #else
 			return new LogBook(0, ImmutableList<LogEntry>.Empty);

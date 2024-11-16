@@ -197,7 +197,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 			throw new ArgumentNullException(nameof(data));
 #endif
 
-#if NET8_0_OR_GREATER
+#if NET
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(data.Length, MaxFileSize);
 #else
 		if (data.Length > MaxFileSize)
