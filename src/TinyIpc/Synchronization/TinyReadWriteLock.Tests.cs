@@ -112,7 +112,7 @@ public class TinyReadWriteLockTests
 		var writeLock1 = readWriteLock1.AcquireWriteLock();
 
 		// The second lock should now throw TimeoutException
-		Should.Throw<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
+		Should.Throw<TimeoutException>(readWriteLock2.AcquireWriteLock);
 
 		// Make sure the expected locks are held
 		readWriteLock1.IsWriterLockHeld.ShouldBeTrue();

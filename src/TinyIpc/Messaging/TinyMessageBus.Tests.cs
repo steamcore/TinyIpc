@@ -10,8 +10,10 @@ public class TinyMessageBusTests
 	[Fact]
 	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_event_handler()
 	{
-		using var messagebus1 = new TinyMessageBus("Example");
-		using var messagebus2 = new TinyMessageBus("Example");
+		var name = Guid.NewGuid().ToString();
+
+		using var messagebus1 = new TinyMessageBus(name);
+		using var messagebus2 = new TinyMessageBus(name);
 
 		var received = "nope";
 
@@ -32,8 +34,10 @@ public class TinyMessageBusTests
 	[Fact]
 	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_subscriber()
 	{
-		using var messagebus1 = new TinyMessageBus("Example");
-		using var messagebus2 = new TinyMessageBus("Example");
+		var name = Guid.NewGuid().ToString();
+
+		using var messagebus1 = new TinyMessageBus(name);
+		using var messagebus2 = new TinyMessageBus(name);
 
 		var received = "nope";
 
@@ -61,6 +65,7 @@ public class TinyMessageBusTests
 	[Fact]
 	public async Task All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario()
 	{
+		var name = Guid.NewGuid().ToString();
 		var messagesPerRound = 32;
 		var firstRound = 16;
 		var secondRound = 16;
@@ -68,8 +73,8 @@ public class TinyMessageBusTests
 		var rnd = new Random();
 
 		// Start up two chatty buses talking to each other
-		using var messagebus1 = new TinyMessageBus("Example");
-		using var messagebus2 = new TinyMessageBus("Example");
+		using var messagebus1 = new TinyMessageBus(name);
+		using var messagebus2 = new TinyMessageBus(name);
 
 		var buses = new[] { messagebus1, messagebus2 };
 
@@ -80,7 +85,7 @@ public class TinyMessageBusTests
 		}
 
 		// Add a new bus to the mix
-		using var messagebus3 = new TinyMessageBus("Example");
+		using var messagebus3 = new TinyMessageBus(name);
 
 		buses = [messagebus1, messagebus2, messagebus3];
 
@@ -109,7 +114,7 @@ public class TinyMessageBusTests
 	[Fact]
 	public async Task All_primitives_should_be_configurable()
 	{
-		var name = "Example";
+		var name = Guid.NewGuid().ToString();
 		var maxReaderCount = TinyIpcOptions.DefaultMaxReaderCount;
 		var maxFileSize = TinyIpcOptions.DefaultMaxFileSize;
 		var waitTimeout = TinyIpcOptions.DefaultWaitTimeout;

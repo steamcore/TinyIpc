@@ -29,7 +29,7 @@ public class TinyMemoryMappedFileTests
 	[InlineData("lorem ipsum dolor sit amet")]
 	public void Write_then_read_returns_what_was_written(string message)
 	{
-		using var file = new TinyMemoryMappedFile("Test");
+		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString());
 
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
@@ -42,7 +42,7 @@ public class TinyMemoryMappedFileTests
 	[Fact]
 	public void Write_with_more_data_than_size_limit_throws()
 	{
-		using var file = new TinyMemoryMappedFile("Test", 4);
+		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString(), maxFileSize: 4);
 
 		using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
@@ -55,7 +55,7 @@ public class TinyMemoryMappedFileTests
 	[InlineData("lorem ipsum dolor sit amet")]
 	public void GetFileSize_returns_expected_size(string message)
 	{
-		using var file = new TinyMemoryMappedFile("Test");
+		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString());
 
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
@@ -68,14 +68,16 @@ public class TinyMemoryMappedFileTests
 	[Fact]
 	public void Dispose_destroys_file()
 	{
-		using (var file = new TinyMemoryMappedFile("Test"))
+		var name = Guid.NewGuid().ToString();
+
+		using (var file = new TinyMemoryMappedFile(name))
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
 			file.Write(dataStream);
 		}
 
-		using (var file = new TinyMemoryMappedFile("Test"))
+		using (var file = new TinyMemoryMappedFile(name))
 		{
 			file.GetFileSize().ShouldBe(0);
 		}
@@ -84,9 +86,11 @@ public class TinyMemoryMappedFileTests
 	[Fact]
 	public void Secondary_instance_keeps_file_alive()
 	{
-		using var file2 = new TinyMemoryMappedFile("Test");
+		var name = Guid.NewGuid().ToString();
 
-		using (var file1 = new TinyMemoryMappedFile("Test"))
+		using var file2 = new TinyMemoryMappedFile(name);
+
+		using (var file1 = new TinyMemoryMappedFile(name))
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
