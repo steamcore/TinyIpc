@@ -239,7 +239,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 			{
 				foreach (var message in messages)
 				{
-					LogPublishingMessage(logger, message.Length);
+					LogPublishingMessage(logger, message.Length, message.MediaType);
 				}
 			}
 
@@ -278,7 +278,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		{
 			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationToken).ConfigureAwait(false))
 			{
-				yield return BinaryData.FromBytes(entry.Message);
+				yield return BinaryData.FromBytes(entry.Message, entry.MediaType);
 			}
 		}
 		finally
@@ -323,10 +323,11 @@ public partial class TinyMessageBus : ITinyMessageBus
 				Id = ++lastId,
 				Instance = instanceId,
 				Message = message,
+				MediaType = message.MediaType,
 				Timestamp = batchTime
 			});
 
-			logSize += LogEntry.Overhead + message.Length;
+			logSize += LogEntry.Overhead + message.Length + message.MediaType?.Length ?? 0;
 			publishCount++;
 		}
 
@@ -394,7 +395,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 				if (logger is not null)
 				{
-					LogReceivedMessage(logger, entry.Message.Length);
+					LogReceivedMessage(logger, entry.Message.Length, entry.MediaType);
 				}
 			}
 
@@ -422,13 +423,13 @@ public partial class TinyMessageBus : ITinyMessageBus
 			{
 				try
 				{
-					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(BinaryData.FromBytes(entry.Message)));
+					MessageReceived?.Invoke(this, new TinyMessageReceivedEventArgs(BinaryData.FromBytes(entry.Message, entry.MediaType)));
 				}
 				catch (Exception ex)
 				{
 					if (logger is not null)
 					{
-						LogReceiveError(logger, ex, entry.Id);
+						LogReceiveError(logger, ex, entry.Id, entry.MediaType);
 					}
 				}
 			}
@@ -468,14 +469,14 @@ public partial class TinyMessageBus : ITinyMessageBus
 		return MessagePackSerializer.Deserialize<LogBook>(stream, MessagePackOptions.Instance);
 	}
 
-	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message")]
-	private static partial void LogPublishingMessage(ILogger logger, int message_length);
+	[LoggerMessage(0, LogLevel.Debug, "Publishing {message_length} byte message, media type {media_type}")]
+	private static partial void LogPublishingMessage(ILogger logger, int message_length, string? media_type);
 
-	[LoggerMessage(1, LogLevel.Debug, "Received {message_length} byte message")]
-	private static partial void LogReceivedMessage(ILogger logger, int message_length);
+	[LoggerMessage(1, LogLevel.Debug, "Received {message_length} byte message, media type {media_type}")]
+	private static partial void LogReceivedMessage(ILogger logger, int message_length, string? media_type);
 
-	[LoggerMessage(2, LogLevel.Error, "Event handler failed handling message with id {id}")]
-	private static partial void LogReceiveError(ILogger logger, Exception exception, long id);
+	[LoggerMessage(2, LogLevel.Error, "Event handler failed handling message with id {id}, media type {media_type}")]
+	private static partial void LogReceiveError(ILogger logger, Exception exception, long id, string? media_type);
 }
 
 [MessagePackObject]
@@ -489,7 +490,7 @@ public readonly record struct LogBook(
 		var size = (long)sizeof(long);
 		for (var i = start; i < Entries.Count; i++)
 		{
-			size += LogEntry.Overhead + Entries[i].Message.Length;
+			size += LogEntry.Overhead + Entries[i].Message.Length + Entries[i].MediaType?.Length ?? 0;
 		}
 		return size;
 	}
@@ -530,7 +531,8 @@ public readonly record struct LogEntry(
 	[property: Key(0)] long Id,
 	[property: Key(1)] Guid Instance,
 	[property: Key(2)] long Timestamp,
-	[property: Key(3)] ReadOnlyMemory<byte> Message
+	[property: Key(3)] ReadOnlyMemory<byte> Message,
+	[property: Key(4)] string? MediaType
 )
 {
 	public static long Overhead { get; }
