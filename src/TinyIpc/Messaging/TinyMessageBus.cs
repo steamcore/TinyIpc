@@ -172,7 +172,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// Publishes a message to the message bus as soon as possible in a background task
 	/// </summary>
 	/// <param name="message"></param>
-	public Task PublishAsync(BinaryData message)
+	public Task PublishAsync(BinaryData message, CancellationToken cancellationToken = default)
 	{
 #if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
@@ -201,14 +201,14 @@ public partial class TinyMessageBus : ITinyMessageBus
 		}
 #endif
 
-		return PublishAsync([message]);
+		return PublishAsync([message], cancellationToken);
 	}
 
 	/// <summary>
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	public Task PublishAsync(IReadOnlyList<BinaryData> messages)
+	public Task PublishAsync(IReadOnlyList<BinaryData> messages, CancellationToken cancellationToken = default)
 	{
 #if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
@@ -252,7 +252,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 					var publishCount = PublishMessages(readStream, writeStream, publishQueue, TimeSpan.FromMilliseconds(100));
 
 					Interlocked.Add(ref messagesPublished, publishCount);
-				});
+				}, cancellationToken);
 
 				// Give messages in the published log a chance to expire in case it is full
 				if (publishQueue.Count > 0)
@@ -260,7 +260,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 					await Task.Delay(50).ConfigureAwait(false);
 				}
 			}
-		});
+		}, cancellationToken);
 	}
 
 	/// <summary>

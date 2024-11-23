@@ -26,13 +26,13 @@ public interface ITinyMessageBus : IDisposable
 	/// Publish a message to the message bus
 	/// </summary>
 	/// <param name="message"></param>
-	Task PublishAsync(BinaryData message);
+	Task PublishAsync(BinaryData message, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Publish a number of messages to the message bus
 	/// </summary>
 	/// <param name="messages"></param>
-	Task PublishAsync(IReadOnlyList<BinaryData> messages);
+	Task PublishAsync(IReadOnlyList<BinaryData> messages, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Subscribe to messages using an async enumerable

@@ -61,19 +61,19 @@ internal sealed class FakeMemoryMappedFile(int maxFileSize)
 		writeStream.Dispose();
 	}
 
-	public int GetFileSize()
+	public int GetFileSize(CancellationToken cancellationToken = default)
 	{
 		return (int)memoryStream.Length;
 	}
 
-	public T Read<T>(Func<MemoryStream, T> readData)
+	public T Read<T>(Func<MemoryStream, T> readData, CancellationToken cancellationToken = default)
 	{
 		memoryStream.Seek(0, SeekOrigin.Begin);
 
 		return readData(memoryStream);
 	}
 
-	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
+	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc, CancellationToken cancellationToken = default)
 	{
 		memoryStream.Seek(0, SeekOrigin.Begin);
 		writeStream.SetLength(0);
@@ -88,7 +88,7 @@ internal sealed class FakeMemoryMappedFile(int maxFileSize)
 		FileUpdated?.Invoke(this, EventArgs.Empty);
 	}
 
-	public void Write(MemoryStream data)
+	public void Write(MemoryStream data, CancellationToken cancellationToken = default)
 	{
 		memoryStream.SetLength(0);
 

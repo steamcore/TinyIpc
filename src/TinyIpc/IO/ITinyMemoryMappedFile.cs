@@ -16,21 +16,21 @@ public interface ITinyMemoryMappedFile : IDisposable
 	/// Gets the file size
 	/// </summary>
 	/// <returns>File size</returns>
-	int GetFileSize();
+	int GetFileSize(CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	T Read<T>(Func<MemoryStream, T> readData);
+	T Read<T>(Func<MemoryStream, T> readData, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	void Write(MemoryStream data);
+	void Write(MemoryStream data, CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc);
+	void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc, CancellationToken cancellationToken = default);
 }

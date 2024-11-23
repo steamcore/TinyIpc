@@ -17,11 +17,11 @@ public interface ITinyReadWriteLock : IDisposable
 	/// but multiple read locks may be held at the same time by multiple instances
 	/// </summary>
 	/// <returns>A disposable that releases the read lock</returns>
-	IDisposable AcquireReadLock();
+	IDisposable AcquireReadLock(CancellationToken cancellationToken = default);
 
 	/// <summary>
 	/// Acquires exclusive write locking by consuming all read locks
 	/// </summary>
 	/// <returns>A disposable that releases the write lock</returns>
-	IDisposable AcquireWriteLock();
+	IDisposable AcquireWriteLock(CancellationToken cancellationToken = default);
 }

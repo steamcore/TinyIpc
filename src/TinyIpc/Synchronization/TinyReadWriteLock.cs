@@ -156,7 +156,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	/// but multiple read locks may be held at the same time by multiple instances
 	/// </summary>
 	/// <returns>A disposable that releases the read lock</returns>
-	public IDisposable AcquireReadLock()
+	public IDisposable AcquireReadLock(CancellationToken cancellationToken = default)
 	{
 #if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
@@ -167,23 +167,33 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		}
 #endif
 
-		if (!synchronizationLock.Wait(waitTimeout))
+		if (!synchronizationLock.Wait(waitTimeout, cancellationToken))
 		{
-			throw new TimeoutException("Could not acquire read lock, timed out waiting for SemaphoreSlim");
+			throw new TimeoutException("Did not acquire read lock, timed out while waiting for SemaphoreSlim.");
 		}
 
-		if (!mutex.WaitOne(waitTimeout))
+		switch (WaitHandle.WaitAny([mutex, cancellationToken.WaitHandle], waitTimeout))
 		{
-			synchronizationLock.Release();
-			throw new TimeoutException("Could not acquire read lock, timed out waiting for Mutex");
+			case 1:
+				synchronizationLock.Release();
+				throw new OperationCanceledException("Did not acquire read lock, operation was cancelled.");
+
+			case WaitHandle.WaitTimeout:
+				synchronizationLock.Release();
+				throw new TimeoutException("Did not acquire read lock, timed out while waiting for Mutex.");
 		}
 
 		try
 		{
-			if (!semaphore.WaitOne(waitTimeout))
+			switch (WaitHandle.WaitAny([semaphore, cancellationToken.WaitHandle], waitTimeout))
 			{
-				synchronizationLock.Release();
-				throw new TimeoutException("Could not acquire read lock, timed out waiting for Semaphore");
+				case 1:
+					synchronizationLock.Release();
+					throw new OperationCanceledException("Did not acquire read lock, operation was cancelled.");
+
+				case WaitHandle.WaitTimeout:
+					synchronizationLock.Release();
+					throw new TimeoutException("Did not acquire read lock, timed out while waiting for Semaphore.");
 			}
 
 			Interlocked.Increment(ref readLocks);
@@ -215,7 +225,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 	/// Acquires exclusive write locking by consuming all read locks
 	/// </summary>
 	/// <returns>A disposable that releases the write lock</returns>
-	public IDisposable AcquireWriteLock()
+	public IDisposable AcquireWriteLock(CancellationToken cancellationToken = default)
 	{
 #if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
@@ -226,15 +236,20 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		}
 #endif
 
-		if (!synchronizationLock.Wait(waitTimeout))
+		if (!synchronizationLock.Wait(waitTimeout, cancellationToken))
 		{
-			throw new TimeoutException("Could not acquire write lock, timed out waiting for SemaphoreSlim");
+			throw new TimeoutException("Did not acquire write lock, timed out while waiting for SemaphoreSlim.");
 		}
 
-		if (!mutex.WaitOne(waitTimeout))
+		switch (WaitHandle.WaitAny([mutex, cancellationToken.WaitHandle], waitTimeout))
 		{
-			synchronizationLock.Release();
-			throw new TimeoutException("Could not acquire write lock, timed out waiting for Mutex");
+			case 1:
+				synchronizationLock.Release();
+				throw new OperationCanceledException("Did not acquire write lock, operation was cancelled.");
+
+			case WaitHandle.WaitTimeout:
+				synchronizationLock.Release();
+				throw new TimeoutException("Did not acquire write lock, timed out while waiting for Mutex.");
 		}
 
 		var readersAcquired = 0;
@@ -242,15 +257,25 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		{
 			for (var i = 0; i < maxReaderCount; i++)
 			{
-				if (!semaphore.WaitOne(waitTimeout))
+				switch (WaitHandle.WaitAny([semaphore, cancellationToken.WaitHandle], waitTimeout))
 				{
-					if (readersAcquired > 0)
-					{
-						semaphore.Release(readersAcquired);
-					}
+					case 1:
+						if (readersAcquired > 0)
+						{
+							semaphore.Release(readersAcquired);
+						}
 
-					synchronizationLock.Release();
-					throw new TimeoutException("Could not acquire write lock, timed out waiting for Semaphore");
+						synchronizationLock.Release();
+						throw new OperationCanceledException("Could not acquire write lock, operation was cancelled.");
+
+					case WaitHandle.WaitTimeout:
+						if (readersAcquired > 0)
+						{
+							semaphore.Release(readersAcquired);
+						}
+
+						synchronizationLock.Release();
+						throw new TimeoutException("Could not acquire write lock, timed out while waiting for Semaphore.");
 				}
 
 				readersAcquired++;

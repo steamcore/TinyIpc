@@ -146,9 +146,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// Gets the file size
 	/// </summary>
 	/// <returns>File size</returns>
-	public int GetFileSize()
+	public int GetFileSize(CancellationToken cancellationToken = default)
 	{
-		using var readLock = readWriteLock.AcquireReadLock();
+		using var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		using var accessor = memoryMappedFile.CreateViewAccessor();
 		var fileSize = accessor.ReadInt32(0);
 
@@ -164,7 +164,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// Reads the content of the memory mapped file with a read lock in place.
 	/// </summary>
 	/// <returns>File content</returns>
-	public T Read<T>(Func<MemoryStream, T> readData)
+	public T Read<T>(Func<MemoryStream, T> readData, CancellationToken cancellationToken = default)
 	{
 #if NET
 		ArgumentNullException.ThrowIfNull(readData);
@@ -175,7 +175,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
-		using var readLock = readWriteLock.AcquireReadLock();
+		using var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
 
 		InternalRead(readStream);
@@ -192,7 +192,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <summary>
 	/// Replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	public void Write(MemoryStream data)
+	public void Write(MemoryStream data, CancellationToken cancellationToken = default)
 	{
 #if NET
 		ArgumentNullException.ThrowIfNull(data);
@@ -212,7 +212,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
-		using var writeLock = readWriteLock.AcquireWriteLock();
+		using var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 
 		try
 		{
@@ -233,7 +233,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <summary>
 	/// Reads and then replaces the content of the memory mapped file with a write lock in place.
 	/// </summary>
-	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc)
+	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc, CancellationToken cancellationToken = default)
 	{
 #if NET
 		ArgumentNullException.ThrowIfNull(updateFunc);
@@ -244,7 +244,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
-		using var writeLock = readWriteLock.AcquireWriteLock();
+		using var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 
 		try
 		{

@@ -13,7 +13,7 @@ internal sealed partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFacto
 		using var tinyIpcInstance = tinyIpcFactory.CreateInstance();
 
 		// Say hello
-		await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("hello"));
+		await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("hello"), stoppingToken);
 
 		try
 		{
@@ -25,14 +25,14 @@ internal sealed partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFacto
 				await Task.Delay(rnd.Next(1_000, 3_000), stoppingToken);
 
 				// Say nonsense
-				await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage(loremIpsum.GetSentence()));
+				await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage(loremIpsum.GetSentence()), stoppingToken);
 			}
 
 		}
 		finally
 		{
 			// Say goodbye
-			await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("goodbye"));
+			await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("goodbye"), stoppingToken);
 
 			LogCount(tinyIpcInstance.MessageBus.MessagesPublished);
 		}

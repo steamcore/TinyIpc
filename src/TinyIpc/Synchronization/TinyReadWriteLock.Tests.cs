@@ -112,7 +112,7 @@ public class TinyReadWriteLockTests
 		var writeLock1 = readWriteLock1.AcquireWriteLock();
 
 		// The second lock should now throw TimeoutException
-		Should.Throw<TimeoutException>(readWriteLock2.AcquireWriteLock);
+		Should.Throw<TimeoutException>(() => readWriteLock2.AcquireWriteLock());
 
 		// Make sure the expected locks are held
 		readWriteLock1.IsWriterLockHeld.ShouldBeTrue();
@@ -177,6 +177,38 @@ public class TinyReadWriteLockTests
 				rwLock.Dispose();
 			}
 		}
+	}
+
+	[Fact]
+	public void ReadLock_should_respect_CancellationToken()
+	{
+		var lockId = Guid.NewGuid().ToString();
+
+		using var readWriteLock1 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(1_000));
+		using var readWriteLock2 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(1_000));
+		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+		// Aquire the first lock
+		using var writeLock1 = readWriteLock1.AcquireReadLock();
+
+		// The second lock should throw OperationCanceledException when CancellationToken triggers
+		Should.Throw<OperationCanceledException>(() => readWriteLock2.AcquireReadLock(cts.Token));
+	}
+
+	[Fact]
+	public void WriteLock_should_respect_CancellationToken()
+	{
+		var lockId = Guid.NewGuid().ToString();
+
+		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(1_000));
+		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(1_000));
+		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+
+		// Aquire the first lock
+		using var writeLock1 = readWriteLock1.AcquireWriteLock();
+
+		// The second lock should throw OperationCanceledException when CancellationToken triggers
+		Should.Throw<OperationCanceledException>(() => readWriteLock2.AcquireWriteLock(cts.Token));
 	}
 
 	private static void WaitForTaskToStart(Task task)
