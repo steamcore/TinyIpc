@@ -3,51 +3,69 @@
 [![NuGet](https://img.shields.io/nuget/v/TinyIpc.svg?maxAge=259200)](https://www.nuget.org/packages/TinyIpc/)
 ![Build](https://github.com/steamcore/TinyIpc/workflows/Build/badge.svg)
 
-.NET inter process broadcast message bus.
+**TinyIpc** is a lightweight, serverless .NET inter-process broadcast message bus designed
+for simplicity and performance in Windows desktop applications.
 
-Intended for quick broadcast messaging in Windows desktop applications, it just works.
+## Table of Contents
+- [Features](#features)
+- [Benefits and Limitations](#benefits-and-limitations)
+- [Performance](#performance)
+- [OS Support](#os-support)
+- [Feature Comparison](#feature-comparison)
+- [Examples](#examples)
+  - [Simple Example](#simple-example)
+  - [Generic Hosting Example](#generic-hosting-example)
 
-## Quick introduction
+## Features
 
-* Designed to be serverless
-* Clients may drop in and out at any time
-* Messages expire after a specified timeout, default 1 second
-* The log is kept small for performance, default max log size is 1 MB
-* Reads are queued and should be received in the same order as they were published
+- **Serverless Architecture**: No master process required.
+- **Flexible Messaging**: Clients can join or leave at any time.
+- **Automatic Expiration**: Messages expire after a configurable timeout (default: 1 second).
+- **Memory Efficient**: Default max log size is 1 MB for high performance.
+- **FIFO Guarantee**: Messages are received in the order they are published.
+- **Fully async**: Supports receiving events in callbacks or via async enumerable
 
-## Benefits and drawbacks
+## Benefits and Limitations
 
-It's easy to use and there is no complicated setup. It is suited for small messages,
-so big messages probably need some other transport mechanism. With high enough
-throughput messages may be lost if receivers are not able to get a read lock before
-the message timeout is reached.
+**Benefits**
+- Easy to set up, no complex configurations required.
+- Ideal for small, quick messages.
+- Fully in-memory for high-speed communication.
+- Can batch send many messages in one operation.
+- Broadcast messages to all listeners (except the sender).
+
+**Limitations**
+- Windows only: Relies on named primitives unavailable on other platforms.
+- Message size: Not suitable for large payloads.
+- Timeout sensitivity: High throughput can lead to message loss if receivers fail to acquire locks in time.
 
 ## Performance
-Every publish operation reads and writes the entire contents of a shared memory
-mapped file and every read operation which is triggered by writes also reads the
-entire file so if performance is important then batch publish several messages
-at once to reduce the amount of reads and writes.
+
+Every publish operation reads and writes the entire shared memory mapped file, and every
+receive operation which is triggered after writes also reads the entire file.
+
+Thus, if high throughput is desired, batch publish several messages at once to reduce
+I/O operations.
 
 ## OS Support
 
-Unfortunately TinyIpc only works on Windows because the named primitives that
-are core to this entire solution only works on Windows and throws
-PlatformNotSupportedException on other operating systems by design.
+TinyIpc currently supports Windows only due to reliance on platform-specific primitives.
 
-See https://github.com/dotnet/runtime/issues/4370 for more information.
+For more details, refer to [this issue](https://github.com/dotnet/runtime/issues/4370).
 
-## Compared to other solutions
+## Feature Comparison
 
 |                                             | TinyIPC  | IpcChannel | Named Pipes |
 |---------------------------------------------|----------|------------|-------------|
 | Broadcasting to all listeners (except self) | &#x2713; | &#x2717;   | &#x2717;    |
-| No master process                           | &#x2713; | &#x2717;   | &#x2717;    |
-| Insensitive to process privilege level      | &#x2713; | &#x2713;   | &#x2713;    |
-| Entirely in memory                          | &#x2713; | &#x2713;   | &#x2713;    |
+| Serverless architecture                     | &#x2713; | &#x2717;   | &#x2717;    |
+| Process privilege agnostic                  | &#x2713; | &#x2713;   | &#x2713;    |
+| Fully in-memory                             | &#x2713; | &#x2713;   | &#x2713;    |
 
-## Simple example
+## Examples
 
-One message bus listening to the other.
+### Simple Example
+
 Check [ConsoleApp](samples/ConsoleApp/) for a sample application.
 
 ```csharp
@@ -63,9 +81,8 @@ while (true)
 	await messagebus1.PublishAsync(BinaryData.FromString(message));
 }
 ```
-## Example using generic hosting
+### Generic Hosting Example
 
-Equivalent example to the above using generic hosting.
 Check [GenericHost](samples/GenericHost/) for a sample application.
 
 ```csharp
