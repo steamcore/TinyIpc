@@ -15,6 +15,7 @@ for simplicity and performance in Windows desktop applications.
 - [Examples](#examples)
   - [Simple Example](#simple-example)
   - [Generic Hosting Example](#generic-hosting-example)
+  - [Advanced Usage](#advanced-usage)
 
 ## Features
 
@@ -86,8 +87,52 @@ while (true)
 Check [GenericHost](samples/GenericHost/) for a sample application.
 
 ```csharp
-// Add service to IServiceCollection
-services.AddTinyIpc(options =>
+// Add a reusable ITinyMessageBus
+services.AddTinyMessageBus(options =>
+{
+	options.Name = "ExampleChannel";
+});
+
+// Then use ITinyMessageBus via dependency injection
+public class SomeService(ITinyMessageBus tinyMessageBus)
+{
+	public Task PublishMessage(string message)
+	{
+		return tinyMessageBus.PublishAsync(BinaryData.FromString(message));
+	}
+
+	public async Task Subscribe()
+	{
+		await foreach (var message in tinyMessageBus.SubscribeAsync())
+		{
+			Console.WriteLine(message.ToString());
+		}
+	}
+}
+```
+
+### Advanced Usage
+You can also add keyed instances with different settings.
+```csharp
+services.AddKeyedTinyMessageBus("instance1", options =>
+{
+	options.Name = "Channel1";
+});
+
+services.AddKeyedTinyMessageBus("instance2", options =>
+{
+	options.Name = "Channel2";
+});
+
+// Then resolve them using [FromKeyedServices(serviceKey)] or via a IServiceProvider
+```
+
+Or you might need to use dependency injection and create multiple instances communicating with the same
+message bus in the same application.
+
+```csharp
+// Add a factory service to IServiceCollection
+services.AddTinyIpcFactory(options =>
 {
 	options.Name = "ExampleChannel";
 });

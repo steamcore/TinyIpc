@@ -8,7 +8,15 @@ namespace TinyIpc.DependencyInjection;
 
 public interface ITinyIpcFactory
 {
+	/// <summary>
+	/// Create a set of locks, memory mapped file accessor and message bus.
+	/// </summary>
 	ITinyIpcInstance CreateInstance();
+
+	/// <summary>
+	/// Create a named set of locks, memory mapped file accessor and message bus.
+	/// </summary>
+	/// <param name="name">The name that was used in a call to AddTinyIpcFactory.</param>
 	ITinyIpcInstance CreateInstance(string name);
 }
 

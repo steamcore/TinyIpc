@@ -1,48 +1,54 @@
 using System.Diagnostics.CodeAnalysis;
-using TinyIpc.DependencyInjection;
+using TinyIpc.Messaging;
 
 namespace GenericHost;
 
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "DI")]
-internal sealed partial class PublishWorker(LoremIpsum loremIpsum, ITinyIpcFactory tinyIpcFactory, ILogger<PublishWorker> logger)
+internal sealed partial class PublishWorker(ITinyMessageBus tinyMessageBus, LoremIpsum loremIpsum, ILogger<PublishWorker> logger)
 	: BackgroundService
 {
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
-		// Create a new instance, can be called multiple times to create multiple instances, remember to dispose
-		using var tinyIpcInstance = tinyIpcFactory.CreateInstance();
-
 		// Say hello
-		await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("hello"), stoppingToken);
+		await PublishMessage("hello", stoppingToken);
 
 		try
 		{
-			var rnd = new Random();
-
 			while (!stoppingToken.IsCancellationRequested)
 			{
 				// Random delay to make it interesting, comment out the delay to make really make it go
-				await Task.Delay(rnd.Next(1_000, 3_000), stoppingToken);
+				await Task.Delay(Random.Shared.Next(1_000, 3_000), stoppingToken);
 
 				// Say nonsense
-				await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage(loremIpsum.GetSentence()), stoppingToken);
+				await PublishMessage(loremIpsum.GetSentence(), stoppingToken);
 			}
-
 		}
 		finally
 		{
-			// Say goodbye
-			await tinyIpcInstance.MessageBus.PublishAsync(SerializeMessage("goodbye"), stoppingToken);
+			// Say goodbye, not using stoppingToken or the message won't be sent
+			await PublishMessage("goodbye", default);
 
-			LogCount(tinyIpcInstance.MessageBus.MessagesPublished);
+			LogCount(tinyMessageBus.MessagesPublished);
 		}
 
-		static BinaryData SerializeMessage(string sentence)
-		{
-			return new WorkerMessage { ProcessId = Environment.ProcessId, Sentence = sentence }.Serialize();
-		}
 	}
 
-	[LoggerMessage(1, LogLevel.Information, "Published {count} messages")]
+	private Task PublishMessage(string sentence, CancellationToken cancellationToken)
+	{
+		var message = new WorkerMessage
+		{
+			ProcessId = Environment.ProcessId,
+			Sentence = sentence
+		};
+
+		LogMessage(message.ProcessId, message.Sentence);
+
+		return tinyMessageBus.PublishAsync(message.Serialize(), cancellationToken);
+	}
+
+	[LoggerMessage(1, LogLevel.Information, "Published message as {pid}: {sentence}")]
+	private partial void LogMessage(int pid, string sentence);
+
+	[LoggerMessage(2, LogLevel.Information, "Published {count} messages")]
 	private partial void LogCount(long count);
 }
