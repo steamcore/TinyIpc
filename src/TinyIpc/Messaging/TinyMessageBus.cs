@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 #if NET
 using System.Runtime.Versioning;
@@ -287,6 +288,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		}
 	}
 
+	[SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "Doesn't work with netstandard2.0")]
 	private int PublishMessages(Stream readStream, Stream writeStream, Queue<BinaryData> publishQueue, TimeSpan timeout)
 	{
 		var logBook = DeserializeLogBook(readStream);

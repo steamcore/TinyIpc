@@ -21,10 +21,9 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 
 	private bool disposed;
 	private int readLocks;
-	private bool writeLock;
 
 	public bool IsReaderLockHeld => readLocks > 0;
-	public bool IsWriterLockHeld => writeLock;
+	public bool IsWriterLockHeld { get; private set; }
 
 	/// <summary>
 	/// Initializes a new instance of the TinyReadWriteLock class.
@@ -281,7 +280,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 				readersAcquired++;
 			}
 
-			writeLock = true;
+			IsWriterLockHeld = true;
 		}
 		finally
 		{
@@ -297,7 +296,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 		{
 			semaphore.Release(maxReaderCount);
 			synchronizationLock.Release();
-			writeLock = false;
+			IsWriterLockHeld = false;
 
 			if (logger is not null)
 			{

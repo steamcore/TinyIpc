@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
 	}
 
 #if NET
-		[SupportedOSPlatform("windows")]
+	[SupportedOSPlatform("windows")]
 #endif
 	public static IServiceCollection AddTinyIpc(this IServiceCollection services, Action<TinyIpcOptions> configure)
 	{
@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
 	}
 
 #if NET
-		[SupportedOSPlatform("windows")]
+	[SupportedOSPlatform("windows")]
 #endif
 	public static IServiceCollection AddTinyIpc(this IServiceCollection services, string name, Action<TinyIpcOptions> configure)
 	{
