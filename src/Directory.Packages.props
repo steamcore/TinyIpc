@@ -16,7 +16,7 @@
   <ItemGroup>
     <PackageVersion Include="MessagePack" Version="2.5.192" />
     <PackageVersion Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
-    <PackageVersion Include="PolySharp" Version="1.14.1" />
+    <PackageVersion Include="PolySharp" Version="1.15.0" />
   </ItemGroup>
 
   <ItemGroup>

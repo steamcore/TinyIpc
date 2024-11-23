@@ -9,7 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageVersion Include="TinyLogger" Version="2.0.2" />
+    <PackageVersion Include="TinyLogger" Version="3.0.0" />
   </ItemGroup>
 
 </Project>
