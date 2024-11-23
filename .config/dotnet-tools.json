@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "messagepack.generator": {
-      "version": "2.5.129",
+      "version": "2.5.192",
       "commands": [
         "mpc"
       ]
