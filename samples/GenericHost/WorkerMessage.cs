@@ -1,10 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
 using MessagePack;
 
 namespace GenericHost;
 
 [MessagePackObject]
-[SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "MessagePack needs to access this type.")]
 public class WorkerMessage
 {
 	[Key(1)]

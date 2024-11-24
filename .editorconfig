@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 17
+# dotnet_library_editorconfig_version = 18
 
 [*]
 charset = utf-8
@@ -154,6 +154,9 @@ dotnet_diagnostic.CA1308.severity = none
 # CA1508: Avoid dead conditional code (buggy)
 dotnet_diagnostic.CA1508.severity = none
 
+# CA1515: Consider making public types internal
+dotnet_diagnostic.CA1515.severity = none
+
 # CA1711: Identifiers should not have incorrect suffix
 dotnet_diagnostic.CA1711.severity = none
 
@@ -284,17 +287,11 @@ dotnet_diagnostic.CA1054.severity = none
 # CA1062: Validate arguments of public methods
 dotnet_diagnostic.CA1062.severity = none
 
-# CA1515: Consider making public types internal
-dotnet_diagnostic.CA1515.severity = none
-
 # CA1707: Identifiers should not contain underscores
 dotnet_diagnostic.CA1707.severity = none
 
 # CA2234: Pass system uri objects instead of strings
 dotnet_diagnostic.CA2234.severity = none
-
-# xUnit1041: Test class constructors which indicate fixture data must have a source for those fixtures
-dotnet_diagnostic.xUnit1041.severity = none
 
 [*Configuration.cs]
 # IDE0130: Namespace does not match folder structure
