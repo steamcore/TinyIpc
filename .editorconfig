@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 18
+# dotnet_library_editorconfig_version = 19
 
 [*]
 charset = utf-8
@@ -279,6 +279,15 @@ dotnet_diagnostic.RCS1192.severity = none
 
 # RCS1250: Use implicit/explicit object creation
 dotnet_diagnostic.RCS1250.severity = none
+
+# VSTHRD002: Avoid problematic synchronous waits
+dotnet_diagnostic.VSTHRD002.severity = none
+
+# VSTHRD003: Avoid awaiting foreign Tasks
+dotnet_diagnostic.VSTHRD003.severity = none
+
+# VSTHRD012: Provide JoinableTaskFactory where allowed
+dotnet_diagnostic.VSTHRD012.severity = none
 
 [*.Tests.cs]
 # CA1054: URI-like parameters should not be strings

@@ -101,7 +101,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 		lastEntryId = memoryMappedFile.Read(static stream => DeserializeLogBook(stream).LastId);
 
-		receiverTask = Task.Run(ReceiverWorker, cancellationTokenSource.Token);
+		receiverTask = Task.Run(ReceiveWorkAsync, cancellationTokenSource.Token);
 	}
 
 	public void Dispose()
@@ -131,7 +131,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 			try
 			{
-				receiverTask.ConfigureAwait(false).GetAwaiter().GetResult();
+				receiverTask.GetAwaiter().GetResult();
 			}
 			catch (TaskCanceledException)
 			{
@@ -141,6 +141,66 @@ public partial class TinyMessageBus : ITinyMessageBus
 			if (disposeFile)
 			{
 				if (!messageReaderSemaphore.Wait(options.Value.WaitTimeout))
+				{
+					throw new TimeoutException("Could not acquire message reader semaphore for disposal");
+				}
+
+				try
+				{
+					memoryMappedFile.Dispose();
+				}
+				finally
+				{
+					messageReaderSemaphore.Release();
+				}
+			}
+
+			messageReaderSemaphore.Dispose();
+			cancellationTokenSource.Dispose();
+		}
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await DisposeAsync(true);
+		GC.SuppressFinalize(this);
+	}
+
+	protected virtual async ValueTask DisposeAsync(bool disposing)
+	{
+		if (disposed)
+		{
+			return;
+		}
+
+		if (disposing)
+		{
+			memoryMappedFile.FileUpdated -= WhenFileUpdated;
+#if NET
+			await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
+#else
+			cancellationTokenSource.Cancel();
+#endif
+
+			disposed = true;
+
+			foreach (var receiverChannel in receiverChannels)
+			{
+				receiverChannel.Value.Writer.Complete();
+			}
+
+			try
+			{
+				await receiverTask.ConfigureAwait(false);
+			}
+			catch (TaskCanceledException)
+			{
+				// Expected
+			}
+
+			if (disposeFile)
+			{
+				if (!await messageReaderSemaphore.WaitAsync(options.Value.WaitTimeout).ConfigureAwait(false))
 				{
 					throw new TimeoutException("Could not acquire message reader semaphore for disposal");
 				}
@@ -277,7 +337,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 		try
 		{
-			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationToken).ConfigureAwait(false))
+			await foreach (var entry in StreamEntriesAsync(receiverChannel.Reader, cancellationToken).ConfigureAwait(false))
 			{
 				yield return BinaryData.FromBytes(entry.Message, entry.MediaType);
 			}
@@ -341,18 +401,18 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 	internal Task ReadAsync()
 	{
-		return ReceiveMessages();
+		return ReceiveMessagesAsync();
 	}
 
 	private void WhenFileUpdated(object? sender, EventArgs args)
 	{
-		_ = ReceiveMessages();
+		_ = ReceiveMessagesAsync();
 	}
 
 	/// <summary>
 	/// Receives messages from the memory mapped file and forwards them to the registered receiver channels.
 	/// </summary>
-	private async Task ReceiveMessages()
+	private async Task ReceiveMessagesAsync()
 	{
 		if (disposed)
 		{
@@ -412,7 +472,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <summary>
 	/// Worker task that processes messages from the receiver channels and invokes the MessageReceived event.
 	/// </summary>
-	private async Task ReceiverWorker()
+	private async Task ReceiveWorkAsync()
 	{
 		var id = Guid.NewGuid();
 		var receiverChannel = Channel.CreateUnbounded<LogEntry>();
@@ -421,7 +481,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 		try
 		{
-			await foreach (var entry in StreamEntries(receiverChannel.Reader, cancellationTokenSource.Token).ConfigureAwait(false))
+			await foreach (var entry in StreamEntriesAsync(receiverChannel.Reader, cancellationTokenSource.Token).ConfigureAwait(false))
 			{
 				try
 				{
@@ -446,7 +506,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		}
 	}
 
-	private static async IAsyncEnumerable<LogEntry> StreamEntries(ChannelReader<LogEntry> reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+	private static async IAsyncEnumerable<LogEntry> StreamEntriesAsync(ChannelReader<LogEntry> reader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
 		while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
 		{
