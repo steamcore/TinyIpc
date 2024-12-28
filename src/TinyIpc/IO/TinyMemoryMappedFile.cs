@@ -150,6 +150,15 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <returns>File size</returns>
 	public int GetFileSize(CancellationToken cancellationToken = default)
 	{
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
+		}
+#endif
+
 		using var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		using var accessor = memoryMappedFile.CreateViewAccessor();
 		var fileSize = accessor.ReadInt32(0);
@@ -174,6 +183,15 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		if (readData is null)
 		{
 			throw new ArgumentNullException(nameof(readData));
+		}
+#endif
+
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
 		}
 #endif
 
@@ -214,6 +232,15 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
+		}
+#endif
+
 		using var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 
 		try
@@ -243,6 +270,15 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		if (updateFunc is null)
 		{
 			throw new ArgumentNullException(nameof(updateFunc));
+		}
+#endif
+
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
 		}
 #endif
 

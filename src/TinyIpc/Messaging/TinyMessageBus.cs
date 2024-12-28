@@ -227,6 +227,15 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	public void ResetMetrics()
 	{
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMessageBus));
+		}
+#endif
+
 		Interlocked.Exchange(ref messagesPublished, 0);
 		Interlocked.Exchange(ref messagesReceived, 0);
 	}
@@ -242,7 +251,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 #else
 		if (disposed)
 		{
-			throw new ObjectDisposedException("Can not publish messages when diposed");
+			throw new ObjectDisposedException(nameof(TinyMessageBus));
 		}
 #endif
 
@@ -278,7 +287,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 #else
 		if (disposed)
 		{
-			throw new ObjectDisposedException("Can not publish messages when diposed");
+			throw new ObjectDisposedException(nameof(TinyMessageBus));
 		}
 #endif
 
@@ -332,6 +341,15 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="cancellationToken"></param>
 	public async IAsyncEnumerable<BinaryData> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
+#if NET
+		ObjectDisposedException.ThrowIf(disposed, this);
+#else
+		if (disposed)
+		{
+			throw new ObjectDisposedException(nameof(TinyMessageBus));
+		}
+#endif
+
 		var id = Guid.NewGuid();
 		var receiverChannel = Channel.CreateUnbounded<LogEntry>();
 
