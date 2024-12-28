@@ -18,6 +18,11 @@ public interface ITinyMessageBus : IDisposable, IAsyncDisposable
 	long MessagesReceived { get; }
 
 	/// <summary>
+	/// The name of the message bus if it was created with a name
+	/// </summary>
+	public string? Name { get; }
+
+	/// <summary>
 	/// Resets MessagesSent and MessagesReceived counters
 	/// </summary>
 	void ResetMetrics();

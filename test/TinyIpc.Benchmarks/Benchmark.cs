@@ -50,6 +50,7 @@ internal sealed class FakeMemoryMappedFile(int maxFileSize)
 	private readonly MemoryStream writeStream = new(maxFileSize);
 
 	public long MaxFileSize { get; } = maxFileSize;
+	public string? Name { get; }
 
 	public event EventHandler? FileUpdated;
 

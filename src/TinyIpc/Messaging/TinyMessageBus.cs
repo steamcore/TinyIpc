@@ -39,6 +39,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 	public long MessagesPublished => Interlocked.Read(ref messagesPublished);
 	public long MessagesReceived => Interlocked.Read(ref messagesReceived);
+	public string? Name { get; }
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMessageBus class.
@@ -51,6 +52,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	public TinyMessageBus(string name, IOptions<TinyIpcOptions>? options = null, ILogger<TinyMessageBus>? logger = null)
 		: this(new TinyMemoryMappedFile(name), disposeFile: true, TimeProvider.System, options ?? new OptionsWrapper<TinyIpcOptions>(new TinyIpcOptions()), logger)
 	{
+		Name = name;
 	}
 
 	/// <summary>

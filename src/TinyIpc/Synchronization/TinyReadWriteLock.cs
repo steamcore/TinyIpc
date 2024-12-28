@@ -24,6 +24,7 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 
 	public bool IsReaderLockHeld => readLocks > 0;
 	public bool IsWriterLockHeld { get; private set; }
+	public string? Name { get; }
 
 	/// <summary>
 	/// Initializes a new instance of the TinyReadWriteLock class.
@@ -89,6 +90,8 @@ public partial class TinyReadWriteLock : ITinyReadWriteLock
 
 		mutex = CreateMutex(name);
 		semaphore = CreateSemaphore(name, maxReaderCount);
+
+		Name = name;
 	}
 
 	/// <summary>

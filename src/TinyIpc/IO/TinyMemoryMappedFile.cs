@@ -27,6 +27,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	public event EventHandler? FileUpdated;
 
 	public long MaxFileSize { get; }
+	public string? Name { get; }
 
 	/// <summary>
 	/// Initializes a new instance of the TinyMemoryMappedFile class.
@@ -78,6 +79,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock, logger)
 	{
+		Name = name;
 	}
 
 	/// <summary>
@@ -121,7 +123,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 			return;
 		}
 
-		// Always set the dispose wait handle even when dispised  by the finalizer
+		// Always set the dispose wait handle even when disposed by the finalizer
 		// otherwize the file watcher task will needleessly have to wait for its timeout.
 		disposeWaitHandle?.Set();
 		fileWatcherTask?.Wait(TinyIpcOptions.DefaultWaitTimeout);

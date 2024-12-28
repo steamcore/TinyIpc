@@ -13,6 +13,11 @@ public interface ITinyMemoryMappedFile : IDisposable
 	long MaxFileSize { get; }
 
 	/// <summary>
+	/// The name of the file if it was created with a name
+	/// </summary>
+	public string? Name { get; }
+
+	/// <summary>
 	/// Gets the file size
 	/// </summary>
 	/// <returns>File size</returns>

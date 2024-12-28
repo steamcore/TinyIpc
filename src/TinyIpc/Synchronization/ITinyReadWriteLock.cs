@@ -13,6 +13,11 @@ public interface ITinyReadWriteLock : IDisposable
 	bool IsWriterLockHeld { get; }
 
 	/// <summary>
+	/// The name of the lock if it was created with a name
+	/// </summary>
+	public string? Name { get; }
+
+	/// <summary>
 	/// Acquire a read lock, only one read lock can be held by once instance
 	/// but multiple read locks may be held at the same time by multiple instances
 	/// </summary>
