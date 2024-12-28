@@ -19,4 +19,7 @@ while (true)
 	}
 
 	await messagebus2.PublishAsync(BinaryData.FromString(message));
+
+	// Wait a bit so the message is received and printed before the next prompt
+	await Task.Delay(100);
 }
