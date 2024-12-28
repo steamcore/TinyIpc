@@ -34,9 +34,9 @@ public class TinyMemoryMappedFileTests
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
 
-		file.Write(dataStream);
+		file.Write(dataStream, TestContext.Current.CancellationToken);
 
-		file.Read(stream => stream.ToArray()).ShouldBe(data);
+		file.Read(stream => stream.ToArray(), TestContext.Current.CancellationToken).ShouldBe(data);
 	}
 
 	[Fact]
@@ -46,7 +46,7 @@ public class TinyMemoryMappedFileTests
 
 		using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(dataStream));
+		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(dataStream, TestContext.Current.CancellationToken));
 	}
 
 	[Theory]
@@ -60,9 +60,9 @@ public class TinyMemoryMappedFileTests
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
 
-		file.Write(dataStream);
+		file.Write(dataStream, TestContext.Current.CancellationToken);
 
-		file.GetFileSize().ShouldBe(message.Length);
+		file.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(message.Length);
 	}
 
 	[Fact]
@@ -74,12 +74,12 @@ public class TinyMemoryMappedFileTests
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-			file.Write(dataStream);
+			file.Write(dataStream, TestContext.Current.CancellationToken);
 		}
 
 		using (var file = new TinyMemoryMappedFile(name))
 		{
-			file.GetFileSize().ShouldBe(0);
+			file.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(0);
 		}
 	}
 
@@ -94,9 +94,9 @@ public class TinyMemoryMappedFileTests
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-			file1.Write(dataStream);
+			file1.Write(dataStream, TestContext.Current.CancellationToken);
 		}
 
-		file2.GetFileSize().ShouldBe(5);
+		file2.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(5);
 	}
 }

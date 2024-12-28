@@ -19,9 +19,9 @@ public class TinyMessageBusTests
 
 		messagebus2.MessageReceived += (sender, e) => received = e.Message.ToString();
 
-		await messagebus1.PublishAsync(BinaryData.FromString("lorem"));
-		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"));
-		await messagebus1.PublishAsync(BinaryData.FromString("yes"));
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"), TestContext.Current.CancellationToken);
 
 		await messagebus2.ReadAsync();
 
@@ -45,19 +45,20 @@ public class TinyMessageBusTests
 		var subscribeTask = Task.Run(async () =>
 		{
 			subscribeTcs.SetResult(true);
-			await foreach (var message in messagebus2.SubscribeAsync())
+			await foreach (var message in messagebus2.SubscribeAsync(TestContext.Current.CancellationToken))
 			{
 				received = message.ToString();
 			}
-		});
+		}, TestContext.Current.CancellationToken);
+
 
 		// Wait for the subscribe task to start
 		await subscribeTcs.Task;
-		await Task.Delay(100);
+		await Task.Delay(100, TestContext.Current.CancellationToken);
 
-		await messagebus1.PublishAsync(BinaryData.FromString("lorem"));
-		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"));
-		await messagebus1.PublishAsync(BinaryData.FromString("yes"));
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"), TestContext.Current.CancellationToken);
 
 		await messagebus2.ReadAsync();
 
@@ -87,7 +88,7 @@ public class TinyMessageBusTests
 		for (var i = 0; i < firstRound; i++)
 		{
 			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
-			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
+			await buses[rnd.Next() % buses.Length].PublishAsync(messages, TestContext.Current.CancellationToken);
 		}
 
 		// Add a new bus to the mix
@@ -98,7 +99,7 @@ public class TinyMessageBusTests
 		for (var i = 0; i < secondRound; i++)
 		{
 			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
-			await buses[rnd.Next() % buses.Length].PublishAsync(messages);
+			await buses[rnd.Next() % buses.Length].PublishAsync(messages, TestContext.Current.CancellationToken);
 		}
 
 		// Force a final read of all messages to work around timing issuees
@@ -136,8 +137,8 @@ public class TinyMessageBusTests
 		using var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
 
 		using var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true);
-		await messageBus.PublishAsync(BinaryData.FromString("lorem"));
-		await messageBus.PublishAsync(BinaryData.FromString("ipsum"));
+		await messageBus.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
+		await messageBus.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
 
 		messageBus.MessagesPublished.ShouldBe(2);
 	}

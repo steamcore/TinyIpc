@@ -8,9 +8,9 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="Shouldly" Version="4.2.1" />
-    <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.analyzers" Version="1.18.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.0" />
+    <PackageVersion Include="xunit.v3" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
