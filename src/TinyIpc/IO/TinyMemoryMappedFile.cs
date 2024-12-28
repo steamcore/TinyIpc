@@ -20,6 +20,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	private readonly bool disposeLock;
 	private readonly EventWaitHandle fileWaitHandle;
 	private readonly ILogger<TinyMemoryMappedFile>? logger;
+	private readonly TaskCompletionSource<bool> watcherTaskCompletionSource = new();
 
 	private readonly EventWaitHandle disposeWaitHandle;
 	private bool disposed;
@@ -241,6 +242,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
+		// Make sure the file watcher is ready before writing
+		watcherTaskCompletionSource.Task.GetAwaiter().GetResult();
+
 		using var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 
 		try
@@ -282,6 +286,9 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
+		// Make sure the file watcher is ready before writing
+		watcherTaskCompletionSource.Task.GetAwaiter().GetResult();
+
 		using var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 
 		try
@@ -316,6 +323,8 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 
 	private void FileWatcher()
 	{
+		watcherTaskCompletionSource.SetResult(true);
+
 		var waitHandles = new[]
 		{
 			disposeWaitHandle,

@@ -25,7 +25,7 @@ public class TinyMessageBusTests
 
 		await messagebus2.ReadAsync();
 
-		// Disposing the message bus forces the read task to finish
+		// Disposing the message buses forces the read tasks to finish
 		await messagebus2.DisposeAsync();
 
 		received.ShouldBe("yes");
@@ -41,13 +41,19 @@ public class TinyMessageBusTests
 
 		var received = "nope";
 
+		var subscribeTcs = new TaskCompletionSource<bool>();
 		var subscribeTask = Task.Run(async () =>
 		{
+			subscribeTcs.SetResult(true);
 			await foreach (var message in messagebus2.SubscribeAsync())
 			{
 				received = message.ToString();
 			}
 		});
+
+		// Wait for the subscribe task to start
+		await subscribeTcs.Task;
+		await Task.Delay(100);
 
 		await messagebus1.PublishAsync(BinaryData.FromString("lorem"));
 		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"));

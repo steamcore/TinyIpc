@@ -25,6 +25,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	private readonly SemaphoreSlim messageReaderSemaphore = new(1, 1);
 	private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> receiverChannels = new();
 	private readonly Task receiverTask;
+	private readonly TaskCompletionSource<bool> receiverTaskCompletionSource = new();
 
 	private readonly ILogger<TinyMessageBus>? logger;
 	private bool disposed;
@@ -307,6 +308,8 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 		return Task.Run(async () =>
 		{
+			await receiverTaskCompletionSource.Task;
+
 			if (logger is not null)
 			{
 				foreach (var message in messages)
@@ -501,6 +504,8 @@ public partial class TinyMessageBus : ITinyMessageBus
 
 		try
 		{
+			receiverTaskCompletionSource.SetResult(true);
+
 			await foreach (var entry in StreamEntriesAsync(receiverChannel.Reader, cancellationTokenSource.Token).ConfigureAwait(false))
 			{
 				try
