@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFrameworks>net481;net8.0-windows;net9.0-windows</TargetFrameworks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>

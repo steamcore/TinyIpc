@@ -15,7 +15,7 @@ public interface ITinyMemoryMappedFile : IDisposable
 	/// <summary>
 	/// The name of the file if it was created with a name
 	/// </summary>
-	public string? Name { get; }
+	string? Name { get; }
 
 	/// <summary>
 	/// Gets the file size

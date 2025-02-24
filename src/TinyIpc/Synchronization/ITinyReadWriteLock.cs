@@ -15,7 +15,7 @@ public interface ITinyReadWriteLock : IDisposable
 	/// <summary>
 	/// The name of the lock if it was created with a name
 	/// </summary>
-	public string? Name { get; }
+	string? Name { get; }
 
 	/// <summary>
 	/// Acquire a read lock, only one read lock can be held by once instance

@@ -20,7 +20,7 @@ public interface ITinyMessageBus : IDisposable, IAsyncDisposable
 	/// <summary>
 	/// The name of the message bus if it was created with a name
 	/// </summary>
-	public string? Name { get; }
+	string? Name { get; }
 
 	/// <summary>
 	/// Resets MessagesSent and MessagesReceived counters
