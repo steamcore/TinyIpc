@@ -184,9 +184,9 @@ public class TinyReadWriteLockTests
 	{
 		var lockId = Guid.NewGuid().ToString();
 
-		using var readWriteLock1 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(1_000));
-		using var readWriteLock2 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(1_000));
-		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+		using var readWriteLock1 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(5_000));
+		using var readWriteLock2 = new TinyReadWriteLock(lockId, 1, TimeSpan.FromMilliseconds(5_000));
+		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
 
 		// Aquire the first lock
 		using var writeLock1 = readWriteLock1.AcquireReadLock(TestContext.Current.CancellationToken);
@@ -200,9 +200,9 @@ public class TinyReadWriteLockTests
 	{
 		var lockId = Guid.NewGuid().ToString();
 
-		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(1_000));
-		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(1_000));
-		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(5_000));
+		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(5_000));
+		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
 
 		// Aquire the first lock
 		using var writeLock1 = readWriteLock1.AcquireWriteLock(TestContext.Current.CancellationToken);
