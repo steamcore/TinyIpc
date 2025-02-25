@@ -29,5 +29,14 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
 
-    - name: Run tests
-      run: dotnet test --no-build test/TinyIpc.Tests
+    - name: Run tests (net9.0-windows)
+      run: dotnet run --no-build --disable-logo --framework net9.0-windows
+      working-directory: test/TinyIpc.Tests
+
+    - name: Run tests (net8.0-windows)
+      run: dotnet run --no-build --disable-logo --framework net8.0-windows
+      working-directory: test/TinyIpc.Tests
+
+    - name: Run tests (net481)
+      run: dotnet run --no-build --disable-logo --framework net481
+      working-directory: test/TinyIpc.Tests

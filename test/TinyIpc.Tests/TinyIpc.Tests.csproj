@@ -2,21 +2,22 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net481;net8.0-windows;net9.0-windows</TargetFrameworks>
+    <TargetFrameworks>net9.0-windows;net8.0-windows;net481</TargetFrameworks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Aot)' == 'true' ">
+    <TargetFrameworks>net9.0-windows</TargetFrameworks>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\TinyIpc\TinyIpc.csproj" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="TUnit.Engine" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="Shouldly" />
-    <PackageReference Include="xunit.analyzers" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="xunit.v3" />
+    <ProjectReference Include="../../src/TinyIpc/TinyIpc.csproj" />
   </ItemGroup>
 
   <ItemGroup>

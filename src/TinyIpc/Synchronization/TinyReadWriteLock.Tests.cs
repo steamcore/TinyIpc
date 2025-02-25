@@ -1,37 +1,36 @@
 using Shouldly;
-using Xunit;
 
 namespace TinyIpc.Synchronization;
 
 public class TinyReadWriteLockTests
 {
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
 	public void Calling_constructor_with_no_name_should_throw(string name)
 	{
 		Should.Throw<ArgumentException>(() => new TinyReadWriteLock(name, 1));
 	}
 
-	[Fact]
+	[Test]
 	public void Calling_constructor_with_zero_readers_should_throw()
 	{
 		Should.Throw<ArgumentOutOfRangeException>(() => new TinyReadWriteLock(Guid.NewGuid().ToString(), 0));
 	}
 
-	[Fact]
-	public async Task Calling_AcquireReadLock_then_AquireWriteLock_should_wait_for_other_lock()
+	[Test]
+	public async Task Calling_AcquireReadLock_then_AquireWriteLock_should_wait_for_other_lock(CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
 		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-		var readLock1 = readWriteLock1.AcquireReadLock(TestContext.Current.CancellationToken);
+		var readLock1 = readWriteLock1.AcquireReadLock(cancellationToken);
 		IDisposable writeLock2 = null;
 
-		var writeLockTask = Task.Run(() => writeLock2 = readWriteLock2.AcquireWriteLock(TestContext.Current.CancellationToken));
+		var writeLockTask = Task.Run(() => writeLock2 = readWriteLock2.AcquireWriteLock(cancellationToken));
 
 		WaitForTaskToStart(writeLockTask);
 
@@ -48,18 +47,18 @@ public class TinyReadWriteLockTests
 		writeLock2?.Dispose();
 	}
 
-	[Fact]
-	public async Task Calling_AcquireWriteLock_then_AquireReadLock_should_wait_for_other_lock()
+	[Test]
+	public async Task Calling_AcquireWriteLock_then_AquireReadLock_should_wait_for_other_lock(CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
 		using var readWriteLock1 = new TinyReadWriteLock(lockId, 2);
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
-		var writeLock1 = readWriteLock1.AcquireWriteLock(TestContext.Current.CancellationToken);
+		var writeLock1 = readWriteLock1.AcquireWriteLock(cancellationToken);
 		IDisposable readLock2 = null;
 
-		var readLockTask = Task.Run(() => readLock2 = readWriteLock2.AcquireReadLock(TestContext.Current.CancellationToken));
+		var readLockTask = Task.Run(() => readLock2 = readWriteLock2.AcquireReadLock(cancellationToken));
 
 		WaitForTaskToStart(readLockTask);
 
@@ -76,32 +75,32 @@ public class TinyReadWriteLockTests
 		readLock2.Dispose();
 	}
 
-	[Fact]
-	public void Calling_Dispose_on_read_lock_should_release_lock()
+	[Test]
+	public void Calling_Dispose_on_read_lock_should_release_lock(CancellationToken cancellationToken)
 	{
 		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 1);
 
-		var readLock = readWriteLock.AcquireReadLock(TestContext.Current.CancellationToken);
+		var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		readWriteLock.IsReaderLockHeld.ShouldBeTrue();
 
 		readLock.Dispose();
 		readWriteLock.IsReaderLockHeld.ShouldBeFalse();
 	}
 
-	[Fact]
-	public void Calling_Dispose_on_write_lock_should_release_locks()
+	[Test]
+	public void Calling_Dispose_on_write_lock_should_release_locks(CancellationToken cancellationToken)
 	{
 		using var readWriteLock = new TinyReadWriteLock(Guid.NewGuid().ToString(), 2);
 
-		var writeLock = readWriteLock.AcquireWriteLock(TestContext.Current.CancellationToken);
+		var writeLock = readWriteLock.AcquireWriteLock(cancellationToken);
 		readWriteLock.IsWriterLockHeld.ShouldBeTrue();
 
 		writeLock.Dispose();
 		readWriteLock.IsWriterLockHeld.ShouldBeFalse();
 	}
 
-	[Fact]
-	public void WriteLock_should_be_exclusive()
+	[Test]
+	public void WriteLock_should_be_exclusive(CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -109,10 +108,10 @@ public class TinyReadWriteLockTests
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2, TimeSpan.FromMilliseconds(0));
 
 		// Aquire the first lock
-		var writeLock1 = readWriteLock1.AcquireWriteLock(TestContext.Current.CancellationToken);
+		var writeLock1 = readWriteLock1.AcquireWriteLock(cancellationToken);
 
 		// The second lock should now throw TimeoutException
-		Should.Throw<TimeoutException>(() => readWriteLock2.AcquireWriteLock(TestContext.Current.CancellationToken));
+		Should.Throw<TimeoutException>(() => readWriteLock2.AcquireWriteLock(cancellationToken));
 
 		// Make sure the expected locks are held
 		readWriteLock1.IsWriterLockHeld.ShouldBeTrue();
@@ -120,7 +119,7 @@ public class TinyReadWriteLockTests
 
 		// By releasing the first lock, the second lock should now be able to be held
 		writeLock1.Dispose();
-		var writeLock2 = readWriteLock2.AcquireWriteLock(TestContext.Current.CancellationToken);
+		var writeLock2 = readWriteLock2.AcquireWriteLock(cancellationToken);
 
 		// Make sure the expected locks are held
 		readWriteLock1.IsWriterLockHeld.ShouldBeFalse();
@@ -129,11 +128,11 @@ public class TinyReadWriteLockTests
 		writeLock2.Dispose();
 	}
 
-	[Theory]
-	[InlineData(2)]
-	[InlineData(3)]
-	[InlineData(7)]
-	public void ReadLock_should_allow_n_readers(int n)
+	[Test]
+	[Arguments(2)]
+	[Arguments(3)]
+	[Arguments(7)]
+	public void ReadLock_should_allow_n_readers(int n, CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -146,7 +145,7 @@ public class TinyReadWriteLockTests
 			// Aquire n locks
 			foreach (var rwLock in locks.Take(n))
 			{
-				heldLocks.Add(rwLock.AcquireReadLock(TestContext.Current.CancellationToken));
+				heldLocks.Add(rwLock.AcquireReadLock(cancellationToken));
 			}
 
 			// The first n locks should now be held
@@ -156,13 +155,13 @@ public class TinyReadWriteLockTests
 			}
 
 			// Trying to aquire one more than n should throw TimeoutException
-			Should.Throw<TimeoutException>(() => locks[n].AcquireReadLock(TestContext.Current.CancellationToken));
+			Should.Throw<TimeoutException>(() => locks[n].AcquireReadLock(cancellationToken));
 
 			// Release any lock of the first locks
 			heldLocks[0].Dispose();
 
 			// The last lock should now be able to aquire the lock
-			heldLocks.Add(locks[n].AcquireReadLock(TestContext.Current.CancellationToken));
+			heldLocks.Add(locks[n].AcquireReadLock(cancellationToken));
 			locks[n].IsReaderLockHeld.ShouldBeTrue("Expected last lock to be held");
 		}
 		finally
@@ -179,8 +178,8 @@ public class TinyReadWriteLockTests
 		}
 	}
 
-	[Fact]
-	public void ReadLock_should_respect_CancellationToken()
+	[Test]
+	public void ReadLock_should_respect_CancellationToken(CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -189,14 +188,14 @@ public class TinyReadWriteLockTests
 		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
 
 		// Aquire the first lock
-		using var writeLock1 = readWriteLock1.AcquireReadLock(TestContext.Current.CancellationToken);
+		using var writeLock1 = readWriteLock1.AcquireReadLock(cancellationToken);
 
 		// The second lock should throw OperationCanceledException when CancellationToken triggers
 		Should.Throw<OperationCanceledException>(() => readWriteLock2.AcquireReadLock(cts.Token));
 	}
 
-	[Fact]
-	public void WriteLock_should_respect_CancellationToken()
+	[Test]
+	public void WriteLock_should_respect_CancellationToken(CancellationToken cancellationToken)
 	{
 		var lockId = Guid.NewGuid().ToString();
 
@@ -205,7 +204,7 @@ public class TinyReadWriteLockTests
 		using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(20));
 
 		// Aquire the first lock
-		using var writeLock1 = readWriteLock1.AcquireWriteLock(TestContext.Current.CancellationToken);
+		using var writeLock1 = readWriteLock1.AcquireWriteLock(cancellationToken);
 
 		// The second lock should throw OperationCanceledException when CancellationToken triggers
 		Should.Throw<OperationCanceledException>(() => readWriteLock2.AcquireWriteLock(cts.Token));

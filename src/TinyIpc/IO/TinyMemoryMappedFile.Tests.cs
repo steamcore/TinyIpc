@@ -1,72 +1,71 @@
 using System.Text;
 using Shouldly;
-using Xunit;
 
 namespace TinyIpc.IO;
 
 public class TinyMemoryMappedFileTests
 {
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
 	public void Calling_constructor_with_no_name_should_throw(string name)
 	{
 		Should.Throw<ArgumentException>(() => new TinyMemoryMappedFile(name));
 	}
 
-	[Theory]
-	[InlineData(0)]
-	[InlineData(-1)]
+	[Test]
+	[Arguments(0)]
+	[Arguments(-1)]
 	public void Calling_constructor_with_invalid_max_file_size_should_throw(long maxFileSize)
 	{
 		Should.Throw<ArgumentException>(() => new TinyMemoryMappedFile("Test", maxFileSize));
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("test")]
-	[InlineData("lorem ipsum dolor sit amet")]
-	public void Write_then_read_returns_what_was_written(string message)
+	[Test]
+	[Arguments("")]
+	[Arguments("test")]
+	[Arguments("lorem ipsum dolor sit amet")]
+	public void Write_then_read_returns_what_was_written(string message, CancellationToken cancellationToken)
 	{
 		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString());
 
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
 
-		file.Write(dataStream, TestContext.Current.CancellationToken);
+		file.Write(dataStream, cancellationToken);
 
-		file.Read(stream => stream.ToArray(), TestContext.Current.CancellationToken).ShouldBe(data);
+		file.Read(stream => stream.ToArray(), cancellationToken).ShouldBe(data);
 	}
 
-	[Fact]
-	public void Write_with_more_data_than_size_limit_throws()
+	[Test]
+	public void Write_with_more_data_than_size_limit_throws(CancellationToken cancellationToken)
 	{
 		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString(), maxFileSize: 4);
 
 		using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(dataStream, TestContext.Current.CancellationToken));
+		Should.Throw<ArgumentOutOfRangeException>(() => file.Write(dataStream, cancellationToken));
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("test")]
-	[InlineData("lorem ipsum dolor sit amet")]
-	public void GetFileSize_returns_expected_size(string message)
+	[Test]
+	[Arguments("")]
+	[Arguments("test")]
+	[Arguments("lorem ipsum dolor sit amet")]
+	public void GetFileSize_returns_expected_size(string message, CancellationToken cancellationToken)
 	{
 		using var file = new TinyMemoryMappedFile(name: Guid.NewGuid().ToString());
 
 		var data = Encoding.UTF8.GetBytes(message);
 		using var dataStream = new MemoryStream(data);
 
-		file.Write(dataStream, TestContext.Current.CancellationToken);
+		file.Write(dataStream, cancellationToken);
 
-		file.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(message.Length);
+		file.GetFileSize(cancellationToken).ShouldBe(message.Length);
 	}
 
-	[Fact]
-	public void Dispose_destroys_file()
+	[Test]
+	public void Dispose_destroys_file(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 
@@ -74,17 +73,17 @@ public class TinyMemoryMappedFileTests
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-			file.Write(dataStream, TestContext.Current.CancellationToken);
+			file.Write(dataStream, cancellationToken);
 		}
 
 		using (var file = new TinyMemoryMappedFile(name))
 		{
-			file.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(0);
+			file.GetFileSize(cancellationToken).ShouldBe(0);
 		}
 	}
 
-	[Fact]
-	public void Secondary_instance_keeps_file_alive()
+	[Test]
+	public void Secondary_instance_keeps_file_alive(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 
@@ -94,9 +93,9 @@ public class TinyMemoryMappedFileTests
 		{
 			using var dataStream = new MemoryStream([1, 2, 3, 4, 5]);
 
-			file1.Write(dataStream, TestContext.Current.CancellationToken);
+			file1.Write(dataStream, cancellationToken);
 		}
 
-		file2.GetFileSize(TestContext.Current.CancellationToken).ShouldBe(5);
+		file2.GetFileSize(cancellationToken).ShouldBe(5);
 	}
 }
