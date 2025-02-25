@@ -1,14 +1,13 @@
 using Shouldly;
 using TinyIpc.IO;
 using TinyIpc.Synchronization;
-using Xunit;
 
 namespace TinyIpc.Messaging;
 
 public class TinyMessageBusTests
 {
-	[Fact]
-	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_event_handler()
+	[Test]
+	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_event_handler(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 
@@ -19,9 +18,9 @@ public class TinyMessageBusTests
 
 		messagebus2.MessageReceived += (sender, e) => received = e.Message.ToString();
 
-		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
-		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
-		await messagebus1.PublishAsync(BinaryData.FromString("yes"), TestContext.Current.CancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), cancellationToken);
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), cancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"), cancellationToken);
 
 		await messagebus2.ReadAsync();
 
@@ -31,8 +30,8 @@ public class TinyMessageBusTests
 		received.ShouldBe("yes");
 	}
 
-	[Fact]
-	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_subscriber()
+	[Test]
+	public async Task Messages_sent_from_one_bus_should_be_received_by_the_other_subscriber(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 
@@ -45,20 +44,20 @@ public class TinyMessageBusTests
 		var subscribeTask = Task.Run(async () =>
 		{
 			subscribeTcs.SetResult(true);
-			await foreach (var message in messagebus2.SubscribeAsync(TestContext.Current.CancellationToken))
+			await foreach (var message in messagebus2.SubscribeAsync(cancellationToken))
 			{
 				received = message.ToString();
 			}
-		}, TestContext.Current.CancellationToken);
+		}, cancellationToken);
 
 
 		// Wait for the subscribe task to start
 		await subscribeTcs.Task;
-		await Task.Delay(100, TestContext.Current.CancellationToken);
+		await Task.Delay(100, cancellationToken);
 
-		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
-		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
-		await messagebus1.PublishAsync(BinaryData.FromString("yes"), TestContext.Current.CancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("lorem"), cancellationToken);
+		await messagebus2.PublishAsync(BinaryData.FromString("ipsum"), cancellationToken);
+		await messagebus1.PublishAsync(BinaryData.FromString("yes"), cancellationToken);
 
 		await messagebus2.ReadAsync();
 
@@ -69,8 +68,8 @@ public class TinyMessageBusTests
 		received.ShouldBe("yes");
 	}
 
-	[Fact]
-	public async Task All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario()
+	[Test]
+	public async Task All_messages_should_be_processed_even_with_multiple_buses_in_a_complex_scenario(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 		var messagesPerRound = 32;
@@ -88,7 +87,7 @@ public class TinyMessageBusTests
 		for (var i = 0; i < firstRound; i++)
 		{
 			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
-			await buses[rnd.Next() % buses.Length].PublishAsync(messages, TestContext.Current.CancellationToken);
+			await buses[rnd.Next() % buses.Length].PublishAsync(messages, cancellationToken);
 		}
 
 		// Add a new bus to the mix
@@ -99,7 +98,7 @@ public class TinyMessageBusTests
 		for (var i = 0; i < secondRound; i++)
 		{
 			var messages = Enumerable.Range(0, messagesPerRound).Select(_ => BinaryData.FromBytes(Guid.NewGuid().ToByteArray())).ToList();
-			await buses[rnd.Next() % buses.Length].PublishAsync(messages, TestContext.Current.CancellationToken);
+			await buses[rnd.Next() % buses.Length].PublishAsync(messages, cancellationToken);
 		}
 
 		// Force a final read of all messages to work around timing issuees
@@ -118,8 +117,8 @@ public class TinyMessageBusTests
 		messagebus3.MessagesReceived.ShouldBe(secondRound * messagesPerRound - messagebus3.MessagesPublished);
 	}
 
-	[Fact]
-	public async Task All_primitives_should_be_configurable()
+	[Test]
+	public async Task All_primitives_should_be_configurable(CancellationToken cancellationToken)
 	{
 		var name = Guid.NewGuid().ToString();
 		var maxReaderCount = TinyIpcOptions.DefaultMaxReaderCount;
@@ -137,8 +136,8 @@ public class TinyMessageBusTests
 		using var tinyMemoryMappedFile = new TinyMemoryMappedFile(memoryMappedFile, eventWaitHandle, maxFileSize, tinyReadWriteLock, disposeLock: true);
 
 		using var messageBus = new TinyMessageBus(tinyMemoryMappedFile, disposeFile: true);
-		await messageBus.PublishAsync(BinaryData.FromString("lorem"), TestContext.Current.CancellationToken);
-		await messageBus.PublishAsync(BinaryData.FromString("ipsum"), TestContext.Current.CancellationToken);
+		await messageBus.PublishAsync(BinaryData.FromString("lorem"), cancellationToken);
+		await messageBus.PublishAsync(BinaryData.FromString("ipsum"), cancellationToken);
 
 		messageBus.MessagesPublished.ShouldBe(2);
 	}
