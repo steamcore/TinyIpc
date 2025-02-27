@@ -49,6 +49,19 @@ task DotnetTest DotnetBuild, {
     }
 }
 
+task AotTest {
+    Push-Location ".\test\TinyIpc.Tests"
+    exec {
+        dotnet publish /p:"Aot=true" --framework "net9.0-windows"
+    }
+    Pop-Location
+
+    Push-Location ".\artifacts\publish\TinyIpc.Tests\release_net9.0-windows_win-x64\"
+    exec {
+        .\TinyIpc.Tests.exe --disable-logo
+    }
+}
+
 task DotnetPack AssertVersion, {
     exec {
         dotnet pack ".\src\TinyIpc\TinyIpc.csproj" `

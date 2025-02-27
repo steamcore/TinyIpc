@@ -2,8 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net481;net8.0-windows;net9.0-windows</TargetFrameworks>
+    <TargetFrameworks>net9.0-windows;net8.0-windows;net481</TargetFrameworks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Aot)' == 'true' ">
+    <TargetFrameworks>net9.0-windows</TargetFrameworks>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
