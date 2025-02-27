@@ -38,14 +38,20 @@ task DotnetBuild DotnetRestore, {
 }
 
 task DotnetTest DotnetBuild, {
-    exec {
-        dotnet test .\test\TinyIpc.Tests\TinyIpc.Tests.csproj
+    Push-Location ".\test\TinyIpc.Tests"
+
+    $targetFrameworks = ([xml](Get-Content ".\TinyIpc.Tests.csproj") | Select-Xml -XPath "//TargetFrameworks/text()").Node.Value -split ';'
+
+    foreach ($framework in $targetFrameworks) {
+        exec {
+            dotnet run --no-build --disable-logo --framework $framework
+        }
     }
 }
 
 task DotnetPack AssertVersion, {
     exec {
-        dotnet pack .\src\TinyIpc\TinyIpc.csproj `
+        dotnet pack ".\src\TinyIpc\TinyIpc.csproj" `
             --configuration Release `
             --output . `
             /p:ContinuousIntegrationBuild="true" `
