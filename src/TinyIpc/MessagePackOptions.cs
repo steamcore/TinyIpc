@@ -4,9 +4,9 @@ using MessagePack.Resolvers;
 namespace TinyIpc;
 
 [GeneratedMessagePackResolver]
-internal sealed partial class AssemblyResolver;
+internal sealed partial class TinyIpcResolver;
 
-[CompositeResolver(typeof(AssemblyResolver), typeof(StandardResolver))]
+[CompositeResolver(typeof(TinyIpcResolver), typeof(ContractlessStandardResolver))]
 internal sealed partial class CompositeResolver;
 
 internal static class MessagePackOptions
