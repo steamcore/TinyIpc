@@ -371,6 +371,16 @@ public partial class TinyMessageBus : ITinyMessageBus
 		}
 	}
 
+	internal async Task WaitForWorkerInitializationAsync()
+	{
+		if (memoryMappedFile is TinyMemoryMappedFile tinyMemoryMappedFile)
+		{
+			await tinyMemoryMappedFile.WaitForWorkerInitializationAsync().ConfigureAwait(false);
+		}
+
+		await receiverTaskCompletionSource.Task;
+	}
+
 	[SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "Doesn't work with netstandard2.0")]
 	private int PublishMessages(Stream readStream, Stream writeStream, Queue<BinaryData> publishQueue, TimeSpan timeout)
 	{
