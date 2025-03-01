@@ -14,6 +14,9 @@ public class TinyMessageBusTests
 		using var messagebus1 = new TinyMessageBus(name);
 		using var messagebus2 = new TinyMessageBus(name);
 
+		await messagebus1.WaitForWorkerInitializationAsync();
+		await messagebus2.WaitForWorkerInitializationAsync();
+
 		var received = "nope";
 
 		messagebus2.MessageReceived += (sender, e) => received = e.Message.ToString();
@@ -37,6 +40,9 @@ public class TinyMessageBusTests
 
 		using var messagebus1 = new TinyMessageBus(name);
 		using var messagebus2 = new TinyMessageBus(name);
+
+		await messagebus1.WaitForWorkerInitializationAsync();
+		await messagebus2.WaitForWorkerInitializationAsync();
 
 		var received = "nope";
 
@@ -82,6 +88,9 @@ public class TinyMessageBusTests
 		using var messagebus1 = new TinyMessageBus(name);
 		using var messagebus2 = new TinyMessageBus(name);
 
+		await messagebus1.WaitForWorkerInitializationAsync();
+		await messagebus2.WaitForWorkerInitializationAsync();
+
 		var buses = new[] { messagebus1, messagebus2 };
 
 		for (var i = 0; i < firstRound; i++)
@@ -93,6 +102,8 @@ public class TinyMessageBusTests
 		// Add a new bus to the mix
 		using var messagebus3 = new TinyMessageBus(name);
 
+		await messagebus3.WaitForWorkerInitializationAsync();
+
 		buses = [messagebus1, messagebus2, messagebus3];
 
 		for (var i = 0; i < secondRound; i++)
@@ -101,7 +112,7 @@ public class TinyMessageBusTests
 			await buses[rnd.Next() % buses.Length].PublishAsync(messages, cancellationToken);
 		}
 
-		// Force a final read of all messages to work around timing issuees
+		// Force a final read of all messages to work around timing issues
 		await messagebus1.ReadAsync();
 		await messagebus2.ReadAsync();
 		await messagebus3.ReadAsync();

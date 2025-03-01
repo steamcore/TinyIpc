@@ -321,6 +321,11 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 	}
 
+	internal Task WaitForWorkerInitializationAsync()
+	{
+		return watcherTaskCompletionSource.Task;
+	}
+
 	private void FileWatcher()
 	{
 		watcherTaskCompletionSource.SetResult(true);
