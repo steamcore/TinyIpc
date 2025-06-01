@@ -25,7 +25,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	private readonly SemaphoreSlim messageReaderSemaphore = new(1, 1);
 	private readonly ConcurrentDictionary<Guid, Channel<LogEntry>> receiverChannels = new();
 	private readonly Task receiverTask;
-	private readonly TaskCompletionSource<bool> receiverTaskCompletionSource = new();
+	private readonly TaskCompletionSource<bool> receiverTaskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	private readonly ILogger<TinyMessageBus>? logger;
 	private bool disposed;

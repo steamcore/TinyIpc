@@ -20,7 +20,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	private readonly bool disposeLock;
 	private readonly EventWaitHandle fileWaitHandle;
 	private readonly ILogger<TinyMemoryMappedFile>? logger;
-	private readonly TaskCompletionSource<bool> watcherTaskCompletionSource = new();
+	private readonly TaskCompletionSource<bool> watcherTaskCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	private readonly EventWaitHandle disposeWaitHandle;
 	private bool disposed;

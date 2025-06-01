@@ -46,7 +46,7 @@ public class TinyMessageBusTests
 
 		var received = "nope";
 
-		var subscribeTcs = new TaskCompletionSource<bool>();
+		var subscribeTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 		var subscribeTask = Task.Run(async () =>
 		{
 			subscribeTcs.SetResult(true);
