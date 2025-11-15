@@ -8,14 +8,14 @@
   <PropertyGroup>
     <DebugType>embedded</DebugType>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>13.0</LangVersion>
+    <LangVersion>14.0</LangVersion>
     <ArtifactsPath>$(MSBuildThisFileDirectory)../artifacts</ArtifactsPath>
   </PropertyGroup>
 
   <PropertyGroup>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>All</AnalysisMode>
-    <AnalysisLevel>9.0</AnalysisLevel>
+    <AnalysisLevel>10.0</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>

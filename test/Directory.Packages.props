@@ -5,10 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="BenchmarkDotNet" Version="0.15.2" />
-    <PackageVersion Include="Polyfill" Version="8.8.0" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.15.7" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="TUnit.Engine" Version="0.57.24" />
+    <PackageVersion Include="TUnit.Engine" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

@@ -2,23 +2,18 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net9.0-windows;net8.0-windows;net481</TargetFrameworks>
+    <TargetFrameworks>net10.0-windows;net8.0-windows;net481</TargetFrameworks>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <EnableTUnitPolyfills>false</EnableTUnitPolyfills>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Aot)' == 'true' ">
-    <TargetFrameworks>net9.0-windows</TargetFrameworks>
+    <TargetFrameworks>net10.0-windows</TargetFrameworks>
     <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Shouldly" />
     <PackageReference Include="TUnit.Engine" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net481' ">
-    <PackageReference Include="Polyfill" />
   </ItemGroup>
 
   <ItemGroup>
