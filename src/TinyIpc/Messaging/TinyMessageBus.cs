@@ -3,9 +3,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-#if NET
 using System.Runtime.Versioning;
-#endif
 using System.Threading.Channels;
 using MessagePack;
 using Microsoft.Extensions.Logging;
@@ -47,9 +45,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	/// <param name="name">A unique system wide name of this message bus, internal primitives will be prefixed before use</param>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyMessageBus(string name, IOptions<TinyIpcOptions>? options = null, ILogger<TinyMessageBus>? logger = null)
 		: this(new TinyMemoryMappedFile(name), disposeFile: true, TimeProvider.System, options ?? new OptionsWrapper<TinyIpcOptions>(new TinyIpcOptions()), logger)
 	{
@@ -179,11 +175,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 		if (disposing)
 		{
 			memoryMappedFile.FileUpdated -= WhenFileUpdated;
-#if NET
 			await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
-#else
-			cancellationTokenSource.Cancel();
-#endif
 
 			disposed = true;
 
@@ -228,14 +220,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// </summary>
 	public void ResetMetrics()
 	{
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMessageBus));
-		}
-#endif
 
 		Interlocked.Exchange(ref messagesPublished, 0);
 		Interlocked.Exchange(ref messagesReceived, 0);
@@ -247,23 +232,8 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="message"></param>
 	public Task PublishAsync(BinaryData message, CancellationToken cancellationToken = default)
 	{
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMessageBus));
-		}
-#endif
-
-#if NET
 		ArgumentNullException.ThrowIfNull(message);
-#else
-		if (message is null)
-		{
-			throw new ArgumentNullException(nameof(message), "Message can not be empty");
-		}
-#endif
 
 #if NET
 		ArgumentOutOfRangeException.ThrowIfZero(message.Length);
@@ -283,23 +253,8 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="messages"></param>
 	public Task PublishAsync(IReadOnlyList<BinaryData> messages, CancellationToken cancellationToken = default)
 	{
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMessageBus));
-		}
-#endif
-
-#if NET
 		ArgumentNullException.ThrowIfNull(messages);
-#else
-		if (messages is null)
-		{
-			throw new ArgumentNullException(nameof(messages), "Message list can not be null");
-		}
-#endif
 
 		if (messages.Count == 0)
 		{
@@ -344,14 +299,7 @@ public partial class TinyMessageBus : ITinyMessageBus
 	/// <param name="cancellationToken"></param>
 	public async IAsyncEnumerable<BinaryData> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
 	{
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMessageBus));
-		}
-#endif
 
 		var id = Guid.NewGuid();
 		var receiverChannel = Channel.CreateUnbounded<LogEntry>();
@@ -590,14 +538,7 @@ public readonly record struct LogBook(
 
 	public int CountEntriesToTrim(TimeProvider timeProvider, TimeSpan minMessageAge)
 	{
-#if NET
 		ArgumentNullException.ThrowIfNull(timeProvider);
-#else
-		if (timeProvider is null)
-		{
-			throw new ArgumentNullException(nameof(timeProvider));
-		}
-#endif
 
 		if (Entries.Count == 0)
 		{

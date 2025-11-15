@@ -1,6 +1,4 @@
-#if NET
 using System.Runtime.Versioning;
-#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -22,9 +20,7 @@ public interface ITinyIpcFactory
 
 public sealed class TinyIpcFactory(IOptionsMonitor<TinyIpcOptions> optionsMonitor, ILoggerFactory loggerFactory) : ITinyIpcFactory
 {
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public ITinyIpcInstance CreateInstance()
 	{
 		var instance = new TinyIpcInstance(
@@ -35,9 +31,7 @@ public sealed class TinyIpcFactory(IOptionsMonitor<TinyIpcOptions> optionsMonito
 		return instance;
 	}
 
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public ITinyIpcInstance CreateInstance(string name)
 	{
 		var options = optionsMonitor.Get(name);

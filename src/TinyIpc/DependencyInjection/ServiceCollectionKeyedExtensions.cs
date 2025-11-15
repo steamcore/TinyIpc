@@ -1,6 +1,4 @@
-#if NET
 using System.Runtime.Versioning;
-#endif
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using TinyIpc;
 using TinyIpc.IO;
@@ -17,9 +15,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// Add a keyed <see cref="ITinyReadWriteLock"/> with named options.
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyReadWriteLock(string serviceKey)
 		{
 			services.AddKeyedTinyReadWriteLock(serviceKey, _ => { });
@@ -31,9 +27,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// Add a keyed <see cref="ITinyReadWriteLock"/> and configure named options.
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyReadWriteLock(string serviceKey, Action<TinyIpcOptions> configure)
 		{
 			services.AddOptions<TinyIpcOptions>(serviceKey)
@@ -50,9 +44,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyMemoryMappedFile(string serviceKey)
 		{
 			services.AddKeyedTinyMemoryMappedFile(serviceKey, _ => { });
@@ -65,9 +57,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyMemoryMappedFile(string serviceKey, Action<TinyIpcOptions> configure)
 		{
 			services.AddKeyedTinyReadWriteLock(serviceKey, configure);
@@ -82,9 +72,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyMessageBus(string serviceKey)
 		{
 			services.AddKeyedTinyMessageBus(serviceKey, _ => { });
@@ -97,9 +85,7 @@ public static partial class ServiceCollectionKeyedExtensions
 		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
 		/// </summary>
 		/// <param name="serviceKey">Service key, this is alos used as a name for the options.</param>
-#if NET
 		[SupportedOSPlatform("windows")]
-#endif
 		public IServiceCollection AddKeyedTinyMessageBus(string serviceKey, Action<TinyIpcOptions> configure)
 		{
 			services.AddKeyedTinyMemoryMappedFile(serviceKey, configure);

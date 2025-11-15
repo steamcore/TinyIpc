@@ -1,8 +1,6 @@
 using System.Buffers;
 using System.IO.MemoryMappedFiles;
-#if NET
 using System.Runtime.Versioning;
-#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TinyIpc.Synchronization;
@@ -34,9 +32,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// Initializes a new instance of the TinyMemoryMappedFile class.
 	/// </summary>
 	/// <param name="options">Options from dependency injection or an OptionsWrapper containing options</param>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyMemoryMappedFile(ITinyReadWriteLock readWriteLock, IOptions<TinyIpcOptions> options, ILogger<TinyMemoryMappedFile> logger)
 		: this((options ?? throw new ArgumentNullException(nameof(options))).Value.Name, options.Value.MaxFileSize, readWriteLock, disposeLock: false, logger)
 	{
@@ -46,9 +42,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// Initializes a new instance of the TinyMemoryMappedFile class.
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyMemoryMappedFile(string name, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(name, TinyIpcOptions.DefaultMaxFileSize, logger)
 	{
@@ -59,9 +53,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// </summary>
 	/// <param name="name">A system wide unique name, the name will have a prefix appended before use</param>
 	/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyMemoryMappedFile(string name, long maxFileSize, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(name, maxFileSize, new TinyReadWriteLock(name), disposeLock: true, logger)
 	{
@@ -74,9 +66,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 	/// <param name="readWriteLock">A read/write lock that will be used to control access to the memory mapped file</param>
 	/// <param name="disposeLock">Set to true if the read/write lock is to be disposed when this instance is disposed</param>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyMemoryMappedFile(string name, long maxFileSize, ITinyReadWriteLock readWriteLock, bool disposeLock, ILogger<TinyMemoryMappedFile>? logger = null)
 		: this(CreateOrOpenMemoryMappedFile(name, maxFileSize), CreateEventWaitHandle(name), maxFileSize, readWriteLock, disposeLock, logger)
 	{
@@ -151,14 +141,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <returns>File size</returns>
 	public int GetFileSize(CancellationToken cancellationToken = default)
 	{
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
-		}
-#endif
 
 		using var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		using var accessor = memoryMappedFile.CreateViewAccessor();
@@ -178,23 +161,8 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <returns>File content</returns>
 	public T Read<T>(Func<MemoryStream, T> readData, CancellationToken cancellationToken = default)
 	{
-#if NET
 		ArgumentNullException.ThrowIfNull(readData);
-#else
-		if (readData is null)
-		{
-			throw new ArgumentNullException(nameof(readData));
-		}
-#endif
-
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
-		}
-#endif
 
 		using var readLock = readWriteLock.AcquireReadLock(cancellationToken);
 		using var readStream = MemoryStreamPool.Manager.GetStream(nameof(TinyMemoryMappedFile));
@@ -215,14 +183,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// </summary>
 	public void Write(MemoryStream data, CancellationToken cancellationToken = default)
 	{
-#if NET
 		ArgumentNullException.ThrowIfNull(data);
-#else
-		if (data is null)
-		{
-			throw new ArgumentNullException(nameof(data));
-		}
-#endif
 
 #if NET
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(data.Length, MaxFileSize);
@@ -233,14 +194,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 		}
 #endif
 
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
-		}
-#endif
 
 		// Make sure the file watcher is ready before writing
 		watcherTaskCompletionSource.Task.GetAwaiter().GetResult();
@@ -268,23 +222,8 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// </summary>
 	public void ReadWrite(Action<MemoryStream, MemoryStream> updateFunc, CancellationToken cancellationToken = default)
 	{
-#if NET
 		ArgumentNullException.ThrowIfNull(updateFunc);
-#else
-		if (updateFunc is null)
-		{
-			throw new ArgumentNullException(nameof(updateFunc));
-		}
-#endif
-
-#if NET
 		ObjectDisposedException.ThrowIf(disposed, this);
-#else
-		if (disposed)
-		{
-			throw new ObjectDisposedException(nameof(TinyMemoryMappedFile));
-		}
-#endif
 
 		// Make sure the file watcher is ready before writing
 		watcherTaskCompletionSource.Task.GetAwaiter().GetResult();
@@ -400,9 +339,7 @@ public partial class TinyMemoryMappedFile : ITinyMemoryMappedFile
 	/// <param name="name">A system wide unique name, the name will have a prefix appended</param>
 	/// <param name="maxFileSize">The maximum amount of data that can be written to the file memory mapped file</param>
 	/// <returns>A system wide MemoryMappedFile</returns>
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public static MemoryMappedFile CreateOrOpenMemoryMappedFile(string name, long maxFileSize)
 	{
 		if (string.IsNullOrWhiteSpace(name))

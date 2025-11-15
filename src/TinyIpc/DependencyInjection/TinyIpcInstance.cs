@@ -1,6 +1,4 @@
-#if NET
 using System.Runtime.Versioning;
-#endif
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TinyIpc.IO;
@@ -26,9 +24,7 @@ public sealed class TinyIpcInstance : ITinyIpcInstance
 	public ITinyMemoryMappedFile MemoryMappedFile => memoryMappedFile;
 	public ITinyMessageBus MessageBus => messageBus;
 
-#if NET
 	[SupportedOSPlatform("windows")]
-#endif
 	public TinyIpcInstance(IOptions<TinyIpcOptions> options, ILoggerFactory loggerFactory)
 	{
 		readWriteLock = new TinyReadWriteLock(options, loggerFactory.CreateLogger<TinyReadWriteLock>());
