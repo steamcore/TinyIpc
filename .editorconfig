@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 19
+# dotnet_library_editorconfig_version = 20
 
 [*]
 charset = utf-8
@@ -307,8 +307,15 @@ dotnet_diagnostic.CA2234.severity = none
 dotnet_diagnostic.IDE0130.severity = none
 
 [*Extensions.cs]
+# CA1034: Do not nest types (disabled for now because it doesn't support extension members)
+dotnet_diagnostic.CA1034.severity = none
+
 # IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = none
+
+[*Middleware.cs]
+# CA1034: Do not nest types (disabled for now because it doesn't support extension members)
+dotnet_diagnostic.CA1034.severity = none
 
 [Program.cs]
 # CA1852: Seal internal types
