@@ -40,23 +40,19 @@ task DotnetBuild DotnetRestore, {
 task DotnetTest DotnetBuild, {
     Push-Location "./test/TinyIpc.Tests"
 
-    $targetFrameworks = ([xml](Get-Content "./TinyIpc.Tests.csproj") | Select-Xml -XPath "//TargetFrameworks/text()").Node.Value -split ';' | Select-Object -Unique
-
-    foreach ($framework in $targetFrameworks) {
-        exec {
-            dotnet run --no-build --disable-logo --framework $framework
-        }
+    exec {
+        dotnet test --no-build --max-parallel-test-modules 1
     }
 }
 
 task AotTest {
     Push-Location "./test/TinyIpc.Tests"
     exec {
-        dotnet publish /p:"Aot=true" --framework "net9.0-windows"
+        dotnet publish /p:"Aot=true" --framework "net10.0-windows"
     }
     Pop-Location
 
-    Push-Location "./artifacts/publish/TinyIpc.Tests/release_net9.0-windows_win-x64/"
+    Push-Location "./artifacts/publish/TinyIpc.Tests/release_net10.0-windows_win-x64/"
     exec {
         .\TinyIpc.Tests.exe --disable-logo
     }
