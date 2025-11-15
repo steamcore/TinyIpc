@@ -17,9 +17,6 @@ jobs:
         dotnet-version: '10.0.x'
         dotnet-quality: 'ga'
 
-    - name: Restore tools
-      run: dotnet tool restore
-
     - name: Restore dependencies
       run: dotnet restore
 
