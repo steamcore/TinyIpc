@@ -11,92 +11,95 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static partial class ServiceCollectionExtensions
 {
-	/// <summary>
-	/// Add a <see cref="ITinyReadWriteLock"/> with default options.
-	/// </summary>
-#if NET
-	[SupportedOSPlatform("windows")]
-#endif
-	public static IServiceCollection AddTinyReadWriteLock(this IServiceCollection services)
+	extension(IServiceCollection services)
 	{
-		services.AddTinyReadWriteLock(_ => { });
-
-		return services;
-	}
-
-	/// <summary>
-	/// Add a <see cref="ITinyReadWriteLock"/> and configure default options.
-	/// </summary>
+		/// <summary>
+		/// Add a <see cref="ITinyReadWriteLock"/> with default options.
+		/// </summary>
 #if NET
-	[SupportedOSPlatform("windows")]
+		[SupportedOSPlatform("windows")]
 #endif
-	public static IServiceCollection AddTinyReadWriteLock(this IServiceCollection services, Action<TinyIpcOptions> configure)
-	{
-		services.AddOptions<TinyIpcOptions>()
-			.Configure(configure);
+		public IServiceCollection AddTinyReadWriteLock()
+		{
+			services.AddTinyReadWriteLock(_ => { });
 
-		services.TryAddSingleton<ITinyReadWriteLock, TinyReadWriteLock>();
+			return services;
+		}
 
-		return services;
-	}
-
-	/// <summary>
-	/// <para>Add a <see cref="ITinyMemoryMappedFile"/> with default options.</para>
-	/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
-	/// </summary>
+		/// <summary>
+		/// Add a <see cref="ITinyReadWriteLock"/> and configure default options.
+		/// </summary>
 #if NET
-	[SupportedOSPlatform("windows")]
+		[SupportedOSPlatform("windows")]
 #endif
-	public static IServiceCollection AddTinyMemoryMappedFile(this IServiceCollection services)
-	{
-		services.AddTinyMemoryMappedFile(_ => { });
+		public IServiceCollection AddTinyReadWriteLock(Action<TinyIpcOptions> configure)
+		{
+			services.AddOptions<TinyIpcOptions>()
+				.Configure(configure);
 
-		return services;
-	}
+			services.TryAddSingleton<ITinyReadWriteLock, TinyReadWriteLock>();
 
-	/// <summary>
-	/// <para>Add a <see cref="ITinyMemoryMappedFile"/> and configure default options.</para>
-	/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
-	/// </summary>
+			return services;
+		}
+
+		/// <summary>
+		/// <para>Add a <see cref="ITinyMemoryMappedFile"/> with default options.</para>
+		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
+		/// </summary>
 #if NET
-	[SupportedOSPlatform("windows")]
+		[SupportedOSPlatform("windows")]
 #endif
-	public static IServiceCollection AddTinyMemoryMappedFile(this IServiceCollection services, Action<TinyIpcOptions> configure)
-	{
-		services.AddTinyReadWriteLock(configure);
+		public IServiceCollection AddTinyMemoryMappedFile()
+		{
+			services.AddTinyMemoryMappedFile(_ => { });
 
-		services.TryAddSingleton<ITinyMemoryMappedFile, TinyMemoryMappedFile>();
+			return services;
+		}
 
-		return services;
-	}
-
-	/// <summary>
-	/// <para>Add a <see cref="ITinyMessageBus"/> with default options.</para>
-	/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
-	/// </summary>
+		/// <summary>
+		/// <para>Add a <see cref="ITinyMemoryMappedFile"/> and configure default options.</para>
+		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> which is used by the file.</para>
+		/// </summary>
 #if NET
-	[SupportedOSPlatform("windows")]
+		[SupportedOSPlatform("windows")]
 #endif
-	public static IServiceCollection AddTinyMessageBus(this IServiceCollection services)
-	{
-		services.AddTinyMessageBus(_ => { });
+		public IServiceCollection AddTinyMemoryMappedFile(Action<TinyIpcOptions> configure)
+		{
+			services.AddTinyReadWriteLock(configure);
 
-		return services;
-	}
+			services.TryAddSingleton<ITinyMemoryMappedFile, TinyMemoryMappedFile>();
 
-	/// <summary>
-	/// <para>Add a <see cref="ITinyMessageBus"/> and configure default options.</para>
-	/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
-	/// </summary>
+			return services;
+		}
+
+		/// <summary>
+		/// <para>Add a <see cref="ITinyMessageBus"/> with default options.</para>
+		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
+		/// </summary>
 #if NET
-	[SupportedOSPlatform("windows")]
+		[SupportedOSPlatform("windows")]
 #endif
-	public static IServiceCollection AddTinyMessageBus(this IServiceCollection services, Action<TinyIpcOptions> configure)
-	{
-		services.AddTinyMemoryMappedFile(configure);
+		public IServiceCollection AddTinyMessageBus()
+		{
+			services.AddTinyMessageBus(_ => { });
 
-		services.TryAddSingleton<ITinyMessageBus, TinyMessageBus>();
+			return services;
+		}
 
-		return services;
+		/// <summary>
+		/// <para>Add a <see cref="ITinyMessageBus"/> and configure default options.</para>
+		/// <para>This also adds a <see cref="ITinyReadWriteLock"/> and a <see cref="ITinyReadWriteLock"/> which is used by the message bus.</para>
+		/// </summary>
+#if NET
+		[SupportedOSPlatform("windows")]
+#endif
+		public IServiceCollection AddTinyMessageBus(Action<TinyIpcOptions> configure)
+		{
+			services.AddTinyMemoryMappedFile(configure);
+
+			services.TryAddSingleton<ITinyMessageBus, TinyMessageBus>();
+
+			return services;
+		}
 	}
 }
