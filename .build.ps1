@@ -41,7 +41,7 @@ task DotnetTest DotnetBuild, {
     Push-Location "./test/TinyIpc.Tests"
 
     exec {
-        dotnet test --no-build --max-parallel-test-modules 1
+        dotnet test --disable-logo --no-build --max-parallel-test-modules 1
     }
 }
 
