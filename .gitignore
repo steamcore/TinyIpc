@@ -2,6 +2,7 @@
 .vs/
 artifacts/
 *.Artifacts/
+TestResults/
 
 *.nupkg
 *.suo
