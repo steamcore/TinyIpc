@@ -7,6 +7,9 @@ param (
     $Version
 )
 
+$artifactFolder = "artifacts"
+$testResultsFolder = Join-Path $artifactFolder "testresults"
+
 task AssertVersion {
     if (-not $Version) {
         throw "Specify version with -Version parameter"
@@ -38,29 +41,32 @@ task DotnetBuild DotnetRestore, {
 }
 
 task DotnetTest DotnetBuild, {
-    Push-Location "./test/TinyIpc.Tests"
-
     exec {
-        dotnet test --disable-logo --no-build --max-parallel-test-modules 1
+        dotnet test `
+            --disable-logo `
+            --no-build `
+            --max-parallel-test-modules 1 `
+            --results-directory $testResultsFolder
     }
 }
 
 task AotTest {
-    Push-Location "./test/TinyIpc.Tests"
-    exec {
-        dotnet publish /p:"Aot=true" --framework "net10.0-windows"
-    }
-    Pop-Location
+    $binary = Join-Path "artifacts" "publish" "TinyIpc.Tests" "release_net10.0-windows_win-x64" "TinyIpc.Tests.exe"
 
-    Push-Location "./artifacts/publish/TinyIpc.Tests/release_net10.0-windows_win-x64/"
     exec {
-        .\TinyIpc.Tests.exe --disable-logo
+        dotnet publish (Join-Path "test" "TinyIpc.Tests") `
+            --framework "net10.0-windows" `
+            -p:"Aot=true"
+    }
+
+    exec {
+        & $binary --disable-logo --results-directory $testResultsFolder
     }
 }
 
 task DotnetPack AssertVersion, {
     exec {
-        dotnet pack ".\src\TinyIpc\TinyIpc.csproj" `
+        dotnet pack (Join-Path "src" "TinyIpc") `
             --configuration Release `
             --output . `
             /p:ContinuousIntegrationBuild="true" `
