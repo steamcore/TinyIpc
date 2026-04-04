@@ -1,7 +1,7 @@
 root = true
 
 # Steamcore .NET library editorconfig
-# dotnet_library_editorconfig_version = 20
+# dotnet_library_editorconfig_version = 21
 
 [*]
 charset = utf-8
@@ -123,6 +123,9 @@ dotnet_naming_rule.non_field_members_should_be_pascal_case.style = pascal_case
 #### Roslynator Options ####
 
 roslynator_accessibility_modifiers = explicit
+
+# Avoid negative boolean comparison (e.g. 'if (foo?.bar != false)' instead of 'if (foo is not null && foo.bar)')
+roslynator_null_conditional_operator.avoid_negative_boolean_comparison = true
 
 # Prefer explicit/implicit object creation
 roslynator_object_creation_type_style = implicit_when_type_is_obvious
@@ -309,6 +312,9 @@ dotnet_diagnostic.IDE0130.severity = none
 [*Extensions.cs]
 # CA1034: Do not nest types (disabled for now because it doesn't support extension members)
 dotnet_diagnostic.CA1034.severity = none
+
+# CA1708: Identifiers should differ by more than case
+dotnet_diagnostic.CA1708.severity = none
 
 # IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = none
