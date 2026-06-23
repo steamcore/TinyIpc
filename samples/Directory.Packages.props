@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageVersion Include="TinyLogger" Version="3.3.0" />
+    <PackageVersion Include="TinyLogger" Version="3.4.0" />
   </ItemGroup>
 
 </Project>
