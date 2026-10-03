@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="TUnit.Engine" Version="1.56.25" />
+    <PackageVersion Include="TUnit.Engine" Version="1.72.16" />
   </ItemGroup>
 
 </Project>
