@@ -1,0 +1,20 @@
+<Project>
+
+  <!-- Replace artifacts test results directory with local test results directory for published projects. -->
+  <Target Name="PublishDefaultResultsDirectory" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_TestConfig Include="@(ResolvedFileToPublish)" Condition="'%(RelativePath)' == '$(AssemblyName).testconfig.json'" />
+    </ItemGroup>
+    <PropertyGroup Condition="'@(_TestConfig)' != ''">
+      <_TestConfigPath>@(_TestConfig)</_TestConfigPath>
+      <_PublishTestConfig>$(IntermediateOutputPath)publish/$(AssemblyName).testconfig.json</_PublishTestConfig>
+      <_TestConfigText>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(_TestConfigPath)')), '("resultDirectory"\s*:\s*)"[^"]*"', '$1"TestResults"'))</_TestConfigText>
+    </PropertyGroup>
+    <WriteLinesToFile Condition="'@(_TestConfig)' != ''" File="$(_PublishTestConfig)" Lines="$([MSBuild]::Escape('$(_TestConfigText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup Condition="'@(_TestConfig)' != ''">
+      <ResolvedFileToPublish Remove="@(_TestConfig)" />
+      <ResolvedFileToPublish Include="$(_PublishTestConfig)" RelativePath="$(AssemblyName).testconfig.json" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+</Project>
