@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: '11.0.x'
         dotnet-quality: 'ga'
 
     - name: Restore dependencies
@@ -31,6 +31,13 @@ jobs:
 
     - name: Run tests
       run: dotnet test --output Detailed --no-build --no-progress --max-parallel-test-modules 1 --results-directory "artifacts/testresults"
+
+    - name: Upload Test Report (net11.0)
+      uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        archive: false
+        path: 'artifacts/testresults/TinyIpc.Tests-windows-net11.0-report.html'
 
     - name: Upload Test Report (net10.0)
       uses: actions/upload-artifact@v7
