@@ -1,5 +1,5 @@
 {
   "platformOptions": {
-    "resultDirectory": "../../artifacts/TestResults"
+    "resultDirectory": "../../artifacts/test"
   }
 }

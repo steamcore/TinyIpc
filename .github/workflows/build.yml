@@ -30,25 +30,25 @@ jobs:
       run: dotnet build --no-restore
 
     - name: Run tests
-      run: dotnet test --output Detailed --no-build --no-progress --max-parallel-test-modules 1 --results-directory "artifacts/testresults"
+      run: dotnet test --output Detailed --no-build --no-progress --max-parallel-test-modules 1 --results-directory-layout flat
 
     - name: Upload Test Report (net11.0)
       uses: actions/upload-artifact@v7
       if: always()
       with:
         archive: false
-        path: 'artifacts/testresults/TinyIpc.Tests-windows-net11.0-report.html'
+        path: 'artifacts/test/TinyIpc.Tests-windows-net11.0-report.html'
 
     - name: Upload Test Report (net10.0)
       uses: actions/upload-artifact@v7
       if: always()
       with:
         archive: false
-        path: 'artifacts/testresults/TinyIpc.Tests-windows-net10.0-report.html'
+        path: 'artifacts/test/TinyIpc.Tests-windows-net10.0-report.html'
 
     - name: Upload Test Report (net48)
       uses: actions/upload-artifact@v7
       if: always()
       with:
         archive: false
-        path: 'artifacts/testresults/TinyIpc.Tests-windows-net48-report.html'
+        path: 'artifacts/test/TinyIpc.Tests-windows-net48-report.html'

@@ -8,7 +8,7 @@ param (
 )
 
 $artifactFolder = "artifacts"
-$testResultsFolder = Join-Path $artifactFolder "testresults"
+$testResultsFolder = Join-Path $artifactFolder "test"
 
 task AssertVersion {
     if (-not $Version) {
@@ -46,7 +46,7 @@ task DotnetTest DotnetBuild, {
             --disable-logo `
             --no-build `
             --max-parallel-test-modules 1 `
-            --results-directory $testResultsFolder
+            --results-directory-layout flat
     }
 }
 
@@ -60,7 +60,7 @@ task AotTest {
     }
 
     exec {
-        & $binary --disable-logo --results-directory $testResultsFolder
+        & $binary --disable-logo --results-directory (Join-Path $testResultsFolder "aot")
     }
 }
 
