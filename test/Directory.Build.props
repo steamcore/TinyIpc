@@ -10,6 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>15.0</LangVersion>
     <Nullable>enable</Nullable>
+    <Features Condition=" '$(TargetFramework)' == 'net11.0' ">runtime-async=on</Features>
     <ArtifactsPath>$(MSBuildThisFileDirectory)../artifacts</ArtifactsPath>
   </PropertyGroup>
 
