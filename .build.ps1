@@ -51,11 +51,11 @@ task DotnetTest DotnetBuild, {
 }
 
 task AotTest {
-    $binary = Join-Path "artifacts" "publish" "TinyIpc.Tests" "release_net10.0-windows_win-x64" "TinyIpc.Tests.exe"
+    $binary = Join-Path "artifacts" "publish" "TinyIpc.Tests" "release_net11.0-windows_win-x64" "TinyIpc.Tests.exe"
 
     exec {
         dotnet publish (Join-Path "test" "TinyIpc.Tests") `
-            --framework "net10.0-windows" `
+            --framework "net11.0-windows" `
             -p:"Aot=true"
     }
 
