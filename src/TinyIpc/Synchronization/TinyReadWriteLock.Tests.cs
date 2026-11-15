@@ -8,9 +8,9 @@ public class TinyReadWriteLockTests
 	[Arguments(null)]
 	[Arguments("")]
 	[Arguments(" ")]
-	public void Calling_constructor_with_no_name_should_throw(string name)
+	public void Calling_constructor_with_no_name_should_throw(string? name)
 	{
-		Should.Throw<ArgumentException>(() => new TinyReadWriteLock(name, 1));
+		Should.Throw<ArgumentException>(() => new TinyReadWriteLock(name!, 1));
 	}
 
 	[Test]
@@ -28,7 +28,7 @@ public class TinyReadWriteLockTests
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
 		var readLock1 = readWriteLock1.AcquireReadLock(cancellationToken);
-		IDisposable writeLock2 = null;
+		IDisposable? writeLock2 = null;
 
 		var writeLockTask = Task.Run(() => writeLock2 = readWriteLock2.AcquireWriteLock(cancellationToken));
 
@@ -56,7 +56,7 @@ public class TinyReadWriteLockTests
 		using var readWriteLock2 = new TinyReadWriteLock(lockId, 2);
 
 		var writeLock1 = readWriteLock1.AcquireWriteLock(cancellationToken);
-		IDisposable readLock2 = null;
+		IDisposable? readLock2 = null;
 
 		var readLockTask = Task.Run(() => readLock2 = readWriteLock2.AcquireReadLock(cancellationToken));
 
@@ -72,7 +72,7 @@ public class TinyReadWriteLockTests
 		readWriteLock1.IsWriterLockHeld.ShouldBeFalse();
 		readWriteLock2.IsReaderLockHeld.ShouldBeTrue();
 
-		readLock2.Dispose();
+		readLock2?.Dispose();
 	}
 
 	[Test]

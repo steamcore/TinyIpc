@@ -9,9 +9,9 @@ public class TinyMemoryMappedFileTests
 	[Arguments(null)]
 	[Arguments("")]
 	[Arguments(" ")]
-	public void Calling_constructor_with_no_name_should_throw(string name)
+	public void Calling_constructor_with_no_name_should_throw(string? name)
 	{
-		Should.Throw<ArgumentException>(() => new TinyMemoryMappedFile(name));
+		Should.Throw<ArgumentException>(() => new TinyMemoryMappedFile(name!));
 	}
 
 	[Test]
